@@ -242,7 +242,14 @@ if (touchingPortal) {
         hurtTime: 0,
         attackCooldown: 0,
         launchCooldown: 0,
-        attackPattern: 'lunge'
+        aggro: false,
+        poisonTimer: 0,
+        poisonTick: 0,
+        regenTimer: 0,
+        tamed: false,
+        attackTimer: 0,
+        attackPattern: 'lunge',
+        chargeTimer: 0,
       });
     }
   } else {

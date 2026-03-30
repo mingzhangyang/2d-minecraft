@@ -4,6 +4,7 @@ import type { GameState } from '../runtime';
 import { clonePlayer, getFuelTicks, getSmeltResult, respawnPlayer } from '../runtime';
 import { BlockType, Weather } from '../types';
 import type { FurnaceData } from '../types';
+import { evictWorldColumns, queueWorldPrefetch } from '../world';
 import type { CollisionChecker, FurnaceUISetter } from './updateContext';
 
 // Circular buffer state for history rewind
@@ -22,6 +23,22 @@ const getHistoryBuf = () => {
     historyBuffer.size = 0;
   }
   return historyBuffer.buf;
+};
+
+// Keep a generous margin beyond the viewport so nearby animal simulation and
+// interaction checks do not immediately regenerate evicted columns.
+const WORLD_STREAM_KEEP_BUFFER_TILES = 256;
+
+const applyWorldStreamingWindow = (state: GameState) => {
+  const visibleStartX = Math.max(0, Math.floor(state.camera.x / TILE_SIZE));
+  const visibleEndX = Math.min(
+    WORLD_WIDTH - 1,
+    Math.ceil((state.camera.x + state.camera.width) / TILE_SIZE) - 1,
+  );
+  const keepStartX = visibleStartX - WORLD_STREAM_KEEP_BUFFER_TILES;
+  const keepEndX = visibleEndX + WORLD_STREAM_KEEP_BUFFER_TILES;
+  evictWorldColumns(state.world, keepStartX, keepEndX);
+  queueWorldPrefetch(state.world, visibleStartX, visibleEndX, state.player.vx);
 };
 
 export const rewindOrSaveHistory = (state: GameState) => {
@@ -118,6 +135,7 @@ export const updateDeadPlayer = ({
   state.camera.y = player.y + player.height / 2 - state.camera.height / 2;
   state.camera.x = Math.max(0, Math.min(state.camera.x, WORLD_WIDTH * TILE_SIZE - state.camera.width));
   state.camera.y = Math.max(0, Math.min(state.camera.y, WORLD_HEIGHT * TILE_SIZE - state.camera.height));
+  applyWorldStreamingWindow(state);
 };
 
 export const updateFurnaces = ({
@@ -127,6 +145,14 @@ export const updateFurnaces = ({
   state: GameState;
   setFurnaceUI: FurnaceUISetter;
 }) => {
+const loadedMinX = Math.max(
+  0,
+  Math.floor(state.camera.x / TILE_SIZE) - WORLD_STREAM_KEEP_BUFFER_TILES,
+);
+const loadedMaxX = Math.min(
+  WORLD_WIDTH - 1,
+  Math.ceil((state.camera.x + state.camera.width) / TILE_SIZE) + WORLD_STREAM_KEEP_BUFFER_TILES,
+);
 // Furnace logic
 for (const [id, f] of Object.entries(state.furnaces)) {
   const furnace = f as FurnaceData;
@@ -136,7 +162,7 @@ for (const [id, f] of Object.entries(state.furnaces)) {
     delete state.furnaces[id];
     continue;
   }
-  if (state.world[fx] && state.world[fx][fy] !== BlockType.FURNACE) {
+  if (fx >= loadedMinX && fx <= loadedMaxX && state.world[fx] && state.world[fx][fy] !== BlockType.FURNACE) {
     // Drop contents if broken
     const dropItem = (item: { type: BlockType, count: number } | null) => {
       if (item) {
@@ -281,6 +307,7 @@ state.camera.y = player.y + player.height / 2 - state.camera.height / 2;
 // Clamp camera to world bounds
 state.camera.x = Math.max(0, Math.min(state.camera.x, WORLD_WIDTH * TILE_SIZE - state.camera.width));
 state.camera.y = Math.max(0, Math.min(state.camera.y, WORLD_HEIGHT * TILE_SIZE - state.camera.height));
+applyWorldStreamingWindow(state);
 };
 
 export const playDamageSound = (state: GameState, oldHealth: number) => {

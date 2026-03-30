@@ -1,16 +1,17 @@
 /**
  * World persistence via localStorage.
- * Strategy: save player state + inventory + only the world blocks that differ
- * from fresh procedural generation (delta encoding). This keeps save size small.
+ * Strategy: save player state + inventory + tracked world edits on top of the
+ * deterministic procedural baseline. This keeps save size small without
+ * generating a second baseline world during every save.
  */
 import type { GameState } from './runtime';
-import { generateWorld } from './world';
-import { BlockType } from './types';
+import { disposeWorldStreaming, generateWorld, getDirtyWorldEdits } from './world';
 
-const SAVE_KEY = 'blockbuilder_save_v1';
+const SAVE_KEY = 'blockbuilder_save_v2';
+const LEGACY_SAVE_KEYS = ['blockbuilder_save_v1'];
 
 type SaveData = {
-  version: 1;
+  version: 2;
   tick: number;
   timeOfDay: number;
   weather: string;
@@ -27,40 +28,16 @@ type SaveData = {
     inventory: Record<number, number>;
     durability: Record<number, number>;
   };
-  // Only store blocks that differ from fresh generation
+  // Only store tracked edits on top of deterministic generation
   worldDeltas: Array<[number, number, number]>; // [x, y, blockType]
-};
-
-/** Compute which world blocks differ from a freshly generated world */
-const buildWorldDeltas = (current: BlockType[][], fresh: BlockType[][]): Array<[number, number, number]> => {
-  const deltas: Array<[number, number, number]> = [];
-  const w = current.length;
-  for (let x = 0; x < w; x++) {
-    const col = current[x];
-    const freshCol = fresh[x];
-    if (!col || !freshCol) continue;
-    for (let y = 0; y < col.length; y++) {
-      if (col[y] !== freshCol[y]) {
-        deltas.push([x, y, col[y]]);
-      }
-    }
-  }
-  return deltas;
-};
-
-let cachedFreshWorld: BlockType[][] | null = null;
-const getFreshWorld = (): BlockType[][] => {
-  if (!cachedFreshWorld) cachedFreshWorld = generateWorld();
-  return cachedFreshWorld;
 };
 
 export const saveGame = (state: GameState): void => {
   try {
-    const fresh = getFreshWorld();
-    const deltas = buildWorldDeltas(state.world, fresh);
+    const deltas = getDirtyWorldEdits(state.world);
 
     const data: SaveData = {
-      version: 1,
+      version: 2,
       tick: state.tick,
       timeOfDay: state.timeOfDay,
       weather: state.weather,
@@ -77,7 +54,7 @@ export const saveGame = (state: GameState): void => {
         exhaustion: state.player.exhaustion,
         poisonTimer: state.player.poisonTimer,
         poisonTick: state.player.poisonTick,
-        isFlying: state.player.isFlying ?? false,
+        isFlying: state.player.isFlying,
         inventory: state.player.inventory,
         durability: state.player.durability,
       },
@@ -96,16 +73,13 @@ export const loadGame = (state: GameState): boolean => {
     if (!raw) return false;
 
     const data: SaveData = JSON.parse(raw);
-    if (data.version !== 1) return false;
+    if (data.version !== 2) return false;
 
-    // Restore world: start from fresh and apply deltas
-    const fresh = getFreshWorld();
-    // Deep copy fresh world into state.world
-    for (let x = 0; x < fresh.length; x++) {
-      state.world[x] = [...fresh[x]];
-    }
+    // Restore world from the deterministic baseline and replay tracked edits.
+    disposeWorldStreaming(state.world);
+    state.world = generateWorld();
     for (const [x, y, block] of data.worldDeltas) {
-      if (state.world[x]) state.world[x][y] = block as BlockType;
+      if (state.world[x]) state.world[x][y] = block;
     }
 
     // Restore player
@@ -119,6 +93,8 @@ export const loadGame = (state: GameState): boolean => {
     state.player.poisonTimer = data.player.poisonTimer;
     state.player.poisonTick = data.player.poisonTick;
     state.player.isFlying = data.player.isFlying;
+    state.player.breath = state.player.maxBreath;
+    state.player.attackTimer = 0;
     state.player.inventory = data.player.inventory;
     state.player.durability = data.player.durability;
     state.player.vx = 0;
@@ -142,7 +118,9 @@ export const loadGame = (state: GameState): boolean => {
 
 export const deleteSave = (): void => {
   localStorage.removeItem(SAVE_KEY);
-  cachedFreshWorld = null; // clear delta baseline
+  for (const key of LEGACY_SAVE_KEYS) {
+    localStorage.removeItem(key);
+  }
 };
 
 export const hasSave = (): boolean => {

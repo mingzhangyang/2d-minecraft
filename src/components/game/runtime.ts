@@ -165,6 +165,10 @@ export const createInitialPlayer = (): Player => ({
   hurtTime: 0,
   poisonTimer: 0,
   poisonTick: 0,
+  isFlying: false,
+  breath: 600,
+  maxBreath: 600,
+  attackTimer: 0,
   inventory: createEmptyInventory(),
   durability: { ...MAX_DURABILITY },
 });
@@ -214,10 +218,16 @@ export const respawnPlayer = (state: GameState) => {
   state.player.health = state.player.maxHealth;
   state.player.hunger = state.player.maxHunger;
   state.player.exhaustion = 0;
+  state.player.hurtTime = 0;
+  state.player.poisonTimer = 0;
+  state.player.poisonTick = 0;
   state.player.x = SPAWN_X * TILE_SIZE;
   state.player.y = (getSurfaceY(SPAWN_X) - 2) * TILE_SIZE;
   state.player.vx = 0;
   state.player.vy = 0;
+  state.player.isFlying = false;
+  state.player.breath = state.player.maxBreath;
+  state.player.attackTimer = 0;
   state.player.fallStartY = undefined;
   state.isDead = false;
 };

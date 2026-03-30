@@ -16,6 +16,7 @@ import {
 } from '../runtime';
 import { updateGame } from '../update/updateGame';
 import { saveGame, loadGame } from '../persistence';
+import { disposeWorldStreaming } from '../world';
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 type GameStats = { health: number; hunger: number; daysPlayed: number };
@@ -497,6 +498,7 @@ export const useGameLoop = ({
     loop();
 
     return () => {
+      disposeWorldStreaming(state.world);
       cancelAnimationFrame(animationFrameId);
       clearInterval(autoSaveInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);

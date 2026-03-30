@@ -11,7 +11,8 @@ type SoundOptions = {
 };
 
 type ActiveSource = {
-  node: AudioScheduledSourceNode;
+  sourceNode: AudioScheduledSourceNode;
+  nodes: AudioNode[];
   priority: number;
   startedAt: number;
   cleanupTimer: number;
@@ -33,17 +34,27 @@ export class SoundEngine {
     }
   }
 
-  private removeSource(source: ActiveSource) {
+  private disposeSource(source: ActiveSource, stopSource: boolean) {
     const idx = this.activeSources.indexOf(source);
-    if (idx !== -1) {
-      this.activeSources.splice(idx, 1);
-    }
+    if (idx === -1) return;
+    this.activeSources.splice(idx, 1);
+
     window.clearTimeout(source.cleanupTimer);
-    source.node.onended = null;
+    source.sourceNode.onended = null;
     try {
-      source.node.disconnect();
+      if (stopSource) {
+        source.sourceNode.stop();
+      }
     } catch {
-      // no-op if already disconnected
+      // no-op if already stopped
+    }
+
+    for (const node of source.nodes) {
+      try {
+        node.disconnect();
+      } catch {
+        // no-op if already disconnected
+      }
     }
   }
 
@@ -74,23 +85,25 @@ export class SoundEngine {
 
     if (victimIndex === -1) return false;
     const victim = this.activeSources[victimIndex];
-    try {
-      victim.node.stop();
-    } catch {
-      this.removeSource(victim);
-    }
+    this.disposeSource(victim, true);
     return true;
   }
 
-  private trackNode(node: AudioScheduledSourceNode, durationMs: number, priority: number) {
+  private trackNode(
+    sourceNode: AudioScheduledSourceNode,
+    durationMs: number,
+    priority: number,
+    nodes: AudioNode[],
+  ) {
     const source: ActiveSource = {
-      node,
+      sourceNode,
+      nodes,
       priority,
       startedAt: performance.now(),
       cleanupTimer: 0,
     };
-    const cleanup = () => this.removeSource(source);
-    node.onended = cleanup;
+    const cleanup = () => this.disposeSource(source, false);
+    sourceNode.onended = cleanup;
     source.cleanupTimer = window.setTimeout(cleanup, durationMs + 150);
     this.activeSources.push(source);
   }
@@ -137,7 +150,7 @@ export class SoundEngine {
 
     osc.start();
     osc.stop(ctx.currentTime + duration);
-    this.trackNode(osc, duration * 1000, priority);
+    this.trackNode(osc, duration * 1000, priority, [osc, gain]);
   }
 
   // Pre-allocated noise buffer pool
@@ -183,7 +196,7 @@ export class SoundEngine {
 
     noise.start();
     noise.stop(ctx.currentTime + duration);
-    this.trackNode(noise, duration * 1000, priority);
+    this.trackNode(noise, duration * 1000, priority, [noise, filter, gain]);
   }
 
   jump() {
@@ -204,7 +217,7 @@ export class SoundEngine {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.2);
-    this.trackNode(osc, 250, priority);
+    this.trackNode(osc, 250, priority, [osc, gain]);
   }
 
   mine() {
@@ -234,7 +247,7 @@ export class SoundEngine {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
-    this.trackNode(osc, 100, priority);
+    this.trackNode(osc, 100, priority, [osc, gain]);
   }
 
   damage() {
@@ -255,7 +268,7 @@ export class SoundEngine {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.3);
-    this.trackNode(osc, 350, priority);
+    this.trackNode(osc, 350, priority, [osc, gain]);
   }
 
   animalSound(type: string, options: SoundOptions = {}) {

@@ -86,10 +86,10 @@ export interface Player {
   hurtTime: number;
   poisonTimer: number;
   poisonTick: number;
-  isFlying?: boolean;
-  breath?: number;
-  maxBreath?: number;
-  attackTimer?: number;
+  isFlying: boolean;
+  breath: number;
+  maxBreath: number;
+  attackTimer: number;
 }
 
 export interface DroppedItem {
@@ -142,18 +142,18 @@ export interface Animal {
   state: 'idle' | 'walking' | 'launching' | 'attacking';
   stateTime: number;
   health: number;
-  maxHealth?: number;
+  maxHealth: number;
   hurtTime: number;
-  attackCooldown?: number;
-  launchCooldown?: number;
-  aggro?: boolean;
-  poisonTimer?: number;
-  poisonTick?: number;
-  regenTimer?: number;
-  tamed?: boolean;
-  attackTimer?: number;
-  attackPattern?: 'normal' | 'lunge' | 'charge';
-  chargeTimer?: number;
+  attackCooldown: number;
+  launchCooldown: number;
+  aggro: boolean;
+  poisonTimer: number;
+  poisonTick: number;
+  regenTimer: number;
+  tamed: boolean;
+  attackTimer: number;
+  attackPattern: 'normal' | 'lunge' | 'charge';
+  chargeTimer: number;
   fallStartY?: number;
 }
 

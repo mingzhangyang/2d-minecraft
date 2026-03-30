@@ -25,9 +25,22 @@ export const updateDroppedItems = ({
   isIntersecting: Intersector;
 }) => {
   const { player } = state;
+  const activeMinX = state.camera.x - state.camera.width;
+  const activeMaxX = state.camera.x + state.camera.width * 2;
+  const activeMinY = state.camera.y - state.camera.height;
+  const activeMaxY = state.camera.y + state.camera.height * 2;
 // Dropped items logic
 for (let i = state.droppedItems.length - 1; i >= 0; i--) {
   const item = state.droppedItems[i];
+
+  if (
+    item.x + 16 < activeMinX ||
+    item.x > activeMaxX ||
+    item.y + 16 < activeMinY ||
+    item.y > activeMaxY
+  ) {
+    continue;
+  }
   
   // Magnet effect
   if (item.type !== BlockType.WORM) {
@@ -235,8 +248,14 @@ if (state.tick % 60 === 0) { // Check every second
               hurtTime: 0,
               attackCooldown: 0,
               launchCooldown: 0,
+              aggro: false,
+              poisonTimer: 0,
+              poisonTick: 0,
               regenTimer: 0,
-              attackPattern: spawnDef.attackPattern
+              tamed: false,
+              attackTimer: 0,
+              attackPattern: spawnDef.attackPattern,
+              chargeTimer: 0,
             });
           }
         }
