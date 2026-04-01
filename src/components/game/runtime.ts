@@ -20,8 +20,14 @@ export type FurnaceSlotType = 'input' | 'fuel' | 'output';
 
 export type GameHistoryEntry = {
   player: Player;
-  animals: Animal[];
-  droppedItems: DroppedItem[];
+  /** Full state of every animal inside the snapshot zone at capture time. */
+  nearbyAnimals: Animal[];
+  /** IDs of ALL animals alive at capture time (used to cull post-snapshot spawns on rewind). */
+  allAnimalIds: number[];
+  /** Full state of every dropped item inside the snapshot zone at capture time. */
+  nearbyItems: DroppedItem[];
+  /** IDs of ALL dropped items alive at capture time. */
+  allItemIds: number[];
   tick: number;
   timeOfDay: number;
   camera: Camera;

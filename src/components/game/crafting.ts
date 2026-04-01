@@ -18,139 +18,96 @@ export const getMaxStack = (type: BlockType): number => {
   return 64;
 };
 
+// ---------------------------------------------------------------------------
+// Pattern-matching helper
+// ---------------------------------------------------------------------------
+// A recipe pattern is a 2-D array (rows × cols) of BlockType | null.
+// null means "this cell must be empty".
+// The helper tries every valid top-left offset so recipes work anywhere in
+// the 3×3 grid; cells outside the placed pattern must also be empty.
+// ---------------------------------------------------------------------------
+type Pattern = (BlockType | null)[][];
+
+const matchPattern = (types: (BlockType | null)[], pattern: Pattern): boolean => {
+  const GRID = 3;
+  const patRows = pattern.length;
+  const patCols = Math.max(0, ...pattern.map(r => r.length));
+  for (let rowOff = 0; rowOff <= GRID - patRows; rowOff++) {
+    for (let colOff = 0; colOff <= GRID - patCols; colOff++) {
+      let match = true;
+      outer: for (let r = 0; r < GRID; r++) {
+        for (let c = 0; c < GRID; c++) {
+          const pr = r - rowOff;
+          const pc = c - colOff;
+          const inPat = pr >= 0 && pr < patRows && pc >= 0 && pc < patCols;
+          const expected = inPat ? pattern[pr][pc] : null;
+          if (types[r * GRID + c] !== expected) { match = false; break outer; }
+        }
+      }
+      if (match) return true;
+    }
+  }
+  return false;
+};
+
 export const checkCrafting = (
   grid: CraftingSlot[],
 ): { type: BlockType; count: number } | null => {
   const types = grid.map((slot) => (slot ? slot.type : null));
 
-  let totalItems = 0;
-  const counts = new Map<BlockType, number>();
-  for (const t of types) {
-    if (t !== null) {
-      totalItems++;
-      counts.set(t, (counts.get(t) || 0) + 1);
-    }
-  }
+  if (types.every(t => t === null)) return null;
 
-  if (totalItems === 0) return null;
+  // Shorthand aliases used in patterns below (null = empty slot)
+  const P  = BlockType.PLANKS;
+  const S  = BlockType.STICK;
+  const F  = BlockType.FANG;
+  const St = BlockType.STONE;
+  const D  = BlockType.DIRT;
+  const _  = null; // empty slot
 
+  // Any log → 4 planks
   if (
-    totalItems === 1 &&
-    (counts.get(BlockType.WOOD) === 1 ||
-      counts.get(BlockType.PINE_WOOD) === 1 ||
-      counts.get(BlockType.PALM_WOOD) === 1)
-  ) {
-    return { type: BlockType.PLANKS, count: 4 };
-  }
+    matchPattern(types, [[BlockType.WOOD]]) ||
+    matchPattern(types, [[BlockType.PINE_WOOD]]) ||
+    matchPattern(types, [[BlockType.PALM_WOOD]])
+  ) return { type: BlockType.PLANKS, count: 4 };
 
-  if (totalItems === 2 && counts.get(BlockType.PLANKS) === 2) {
-    for (let i = 0; i < 6; i++) {
-      if (types[i] === BlockType.PLANKS && types[i + 3] === BlockType.PLANKS) {
-        return { type: BlockType.STICK, count: 4 };
-      }
-    }
-  }
+  // 2 planks (vertical) → 4 sticks
+  if (matchPattern(types, [[P], [P]])) return { type: BlockType.STICK, count: 4 };
 
-  // Wooden Sword: 2 planks, 1 stick
-  if (
-    totalItems === 3 &&
-    counts.get(BlockType.PLANKS) === 2 &&
-    counts.get(BlockType.STICK) === 1
-  ) {
-    for (let i = 0; i < 3; i++) {
-      if (
-        types[i] === BlockType.PLANKS &&
-        types[i + 3] === BlockType.PLANKS &&
-        types[i + 6] === BlockType.STICK
-      ) {
-        return { type: BlockType.WOODEN_SWORD, count: 1 };
-      }
-    }
-  }
+  // Wooden Sword: planks-planks-stick column
+  if (matchPattern(types, [[P], [P], [S]])) return { type: BlockType.WOODEN_SWORD, count: 1 };
 
-  // Fang Lance: 1 fang, 1 stick
-  if (
-    totalItems === 2 &&
-    counts.get(BlockType.FANG) === 1 &&
-    counts.get(BlockType.STICK) === 1
-  ) {
-    for (let i = 0; i < 6; i++) {
-      if (types[i] === BlockType.FANG && types[i + 3] === BlockType.STICK) {
-        return { type: BlockType.FANG_LANCE, count: 1 };
-      }
-    }
-  }
+  // Fang Lance: fang above stick
+  if (matchPattern(types, [[F], [S]])) return { type: BlockType.FANG_LANCE, count: 1 };
 
-  if (totalItems === 4 && counts.get(BlockType.STONE) === 4) {
-    const is2x2 =
-      (types[0] === BlockType.STONE &&
-        types[1] === BlockType.STONE &&
-        types[3] === BlockType.STONE &&
-        types[4] === BlockType.STONE) ||
-      (types[1] === BlockType.STONE &&
-        types[2] === BlockType.STONE &&
-        types[4] === BlockType.STONE &&
-        types[5] === BlockType.STONE) ||
-      (types[3] === BlockType.STONE &&
-        types[4] === BlockType.STONE &&
-        types[6] === BlockType.STONE &&
-        types[7] === BlockType.STONE) ||
-      (types[4] === BlockType.STONE &&
-        types[5] === BlockType.STONE &&
-        types[7] === BlockType.STONE &&
-        types[8] === BlockType.STONE);
-    if (is2x2) return { type: BlockType.BRICKS, count: 4 };
-  }
+  // 2×2 stone → 4 bricks
+  if (matchPattern(types, [[St, St], [St, St]])) return { type: BlockType.BRICKS, count: 4 };
 
-  if (totalItems === 8 && counts.get(BlockType.STONE) === 8 && types[4] === null) {
-    return { type: BlockType.FURNACE, count: 1 };
-  }
+  // Hollow 3×3 stone ring → furnace
+  if (matchPattern(types, [
+    [St, St, St],
+    [St,  _, St],
+    [St, St, St],
+  ])) return { type: BlockType.FURNACE, count: 1 };
 
-  if (totalItems === 2 && counts.get(BlockType.DIRT) === 2) {
-    for (let i = 0; i < 6; i++) {
-      if (types[i] === BlockType.DIRT && types[i + 3] === BlockType.DIRT) {
-        return { type: BlockType.GRASS, count: 1 };
-      }
-    }
-  }
+  // 2 dirt (vertical) → grass
+  if (matchPattern(types, [[D], [D]])) return { type: BlockType.GRASS, count: 1 };
 
-  // Pickaxes: 3 material on top, 2 sticks below
-  if (totalItems === 5 && types[4] === BlockType.STICK && types[7] === BlockType.STICK) {
-    if (
-      types[0] === BlockType.PLANKS &&
-      types[1] === BlockType.PLANKS &&
-      types[2] === BlockType.PLANKS
-    ) {
-      return { type: BlockType.WOODEN_PICKAXE, count: 1 };
-    }
-    if (
-      types[0] === BlockType.STONE &&
-      types[1] === BlockType.STONE &&
-      types[2] === BlockType.STONE
-    ) {
-      return { type: BlockType.STONE_PICKAXE, count: 1 };
-    }
-    if (
-      types[0] === BlockType.IRON_INGOT &&
-      types[1] === BlockType.IRON_INGOT &&
-      types[2] === BlockType.IRON_INGOT
-    ) {
-      return { type: BlockType.IRON_PICKAXE, count: 1 };
-    }
-    if (
-      types[0] === BlockType.GOLD_INGOT &&
-      types[1] === BlockType.GOLD_INGOT &&
-      types[2] === BlockType.GOLD_INGOT
-    ) {
-      return { type: BlockType.GOLD_PICKAXE, count: 1 };
-    }
-    if (
-      types[0] === BlockType.DIAMOND &&
-      types[1] === BlockType.DIAMOND &&
-      types[2] === BlockType.DIAMOND
-    ) {
-      return { type: BlockType.DIAMOND_PICKAXE, count: 1 };
-    }
+  // Pickaxes: 3-material top row + 2 sticks down centre
+  const PICKAXES: [BlockType, BlockType][] = [
+    [BlockType.PLANKS,     BlockType.WOODEN_PICKAXE],
+    [BlockType.STONE,      BlockType.STONE_PICKAXE],
+    [BlockType.IRON_INGOT, BlockType.IRON_PICKAXE],
+    [BlockType.GOLD_INGOT, BlockType.GOLD_PICKAXE],
+    [BlockType.DIAMOND,    BlockType.DIAMOND_PICKAXE],
+  ];
+  for (const [mat, result] of PICKAXES) {
+    if (matchPattern(types, [
+      [mat, mat, mat],
+      [ _,   S,  _],
+      [ _,   S,  _],
+    ])) return { type: result, count: 1 };
   }
 
   return null;

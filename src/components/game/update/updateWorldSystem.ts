@@ -41,6 +41,10 @@ const applyWorldStreamingWindow = (state: GameState) => {
   queueWorldPrefetch(state.world, visibleStartX, visibleEndX, state.player.vx);
 };
 
+// Snapshot zone: visible viewport plus a generous margin so nearby
+// off-screen entities are also captured.
+const HISTORY_MARGIN = 256;
+
 export const rewindOrSaveHistory = (state: GameState) => {
   const buf = getHistoryBuf();
 
@@ -52,14 +56,41 @@ export const rewindOrSaveHistory = (state: GameState) => {
     }
     if (historyBuffer.size > 0) {
       const idx = (historyBuffer.head - 1 + historyBuffer.capacity) % historyBuffer.capacity;
-      const pastState = buf[idx];
-      if (pastState) {
-        state.player = clonePlayer(pastState.player);
-        state.animals = pastState.animals.map(animal => ({ ...animal }));
-        state.droppedItems = pastState.droppedItems.map(item => ({ ...item }));
-        state.tick = pastState.tick;
-        state.timeOfDay = pastState.timeOfDay;
-        state.camera = { ...pastState.camera };
+      const snap = buf[idx];
+      if (snap) {
+        state.player = clonePlayer(snap.player);
+
+        // Remove animals spawned after the snapshot, keep far-away ones as-is
+        const snapAnimalIds = new Set(snap.allAnimalIds);
+        state.animals = state.animals.filter(a => snapAnimalIds.has(a.id));
+        // Restore the exact state of animals that were in the snapshot zone
+        const nearbyAnimalMap = new Map(snap.nearbyAnimals.map(a => [a.id, a]));
+        for (let i = 0; i < state.animals.length; i++) {
+          const past = nearbyAnimalMap.get(state.animals[i].id);
+          if (past) state.animals[i] = { ...past };
+        }
+        // Re-add any snapshotted animal that has since left state.animals entirely
+        const currentAnimalIds = new Set(state.animals.map(a => a.id));
+        for (const past of snap.nearbyAnimals) {
+          if (!currentAnimalIds.has(past.id)) state.animals.push({ ...past });
+        }
+
+        // Same treatment for dropped items
+        const snapItemIds = new Set(snap.allItemIds);
+        state.droppedItems = state.droppedItems.filter(i => snapItemIds.has(i.id));
+        const nearbyItemMap = new Map(snap.nearbyItems.map(i => [i.id, i]));
+        for (let i = 0; i < state.droppedItems.length; i++) {
+          const past = nearbyItemMap.get(state.droppedItems[i].id);
+          if (past) state.droppedItems[i] = { ...past };
+        }
+        const currentItemIds = new Set(state.droppedItems.map(i => i.id));
+        for (const past of snap.nearbyItems) {
+          if (!currentItemIds.has(past.id)) state.droppedItems.push({ ...past });
+        }
+
+        state.tick = snap.tick;
+        state.timeOfDay = snap.timeOfDay;
+        state.camera = { ...snap.camera };
       }
     }
     return true;
@@ -68,11 +99,24 @@ export const rewindOrSaveHistory = (state: GameState) => {
   // Only snapshot every 3 frames to reduce memory pressure
   if (state.tick % 3 !== 0) return false;
 
+  // Capture only entities within the snapshot zone — far-away entities are
+  // unchanged during short rewinds so their current state is always correct.
+  const zX1 = state.camera.x - HISTORY_MARGIN;
+  const zX2 = state.camera.x + state.camera.width + HISTORY_MARGIN;
+  const zY1 = state.camera.y - HISTORY_MARGIN;
+  const zY2 = state.camera.y + state.camera.height + HISTORY_MARGIN;
+
   const writeIdx = historyBuffer.head % historyBuffer.capacity;
   buf[writeIdx] = {
     player: clonePlayer(state.player),
-    animals: state.animals.map(animal => ({ ...animal })),
-    droppedItems: state.droppedItems.map(item => ({ ...item })),
+    allAnimalIds: state.animals.map(a => a.id),
+    nearbyAnimals: state.animals
+      .filter(a => a.x + a.width > zX1 && a.x < zX2 && a.y + a.height > zY1 && a.y < zY2)
+      .map(a => ({ ...a })),
+    allItemIds: state.droppedItems.map(i => i.id),
+    nearbyItems: state.droppedItems
+      .filter(i => i.x + 16 > zX1 && i.x < zX2 && i.y + 16 > zY1 && i.y < zY2)
+      .map(i => ({ ...i })),
     tick: state.tick,
     timeOfDay: state.timeOfDay,
     camera: { ...state.camera },
