@@ -57,16 +57,11 @@ export const getValidSpawnX = (
       ) {
         return x;
       }
-      if (attempt > 20) return x;
     } else {
       return x;
     }
   }
 
-  if (playerX !== undefined) {
-    const fallbackX = Math.floor(playerX / TILE_SIZE) + 800 / TILE_SIZE;
-    if (fallbackX >= 0 && fallbackX < WORLD_WIDTH) return fallbackX;
-  }
   return null;
 };
 

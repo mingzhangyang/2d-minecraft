@@ -255,7 +255,7 @@ export const useGameLoop = ({
 
             // Check if clicking a furnace
             if (state.world[gridX][gridY] === BlockType.FURNACE) {
-              const id = `${gridX},${gridY}`;
+              const id = String(gridX * WORLD_HEIGHT + gridY);
               if (!state.furnaces[id]) {
                 state.furnaces[id] = { input: null, fuel: null, output: null, progress: 0, fuelLeft: 0, maxFuel: 0 };
               }

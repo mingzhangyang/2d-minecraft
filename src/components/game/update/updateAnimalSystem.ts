@@ -855,22 +855,15 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       
       // Bite player
       if ((animal.attackCooldown <= 0) && isIntersecting(animal, player)) {
-        if (animal.type === AnimalType.TIGER_SNAKE) {
-          player.health -= 2; // 1 heart
-          player.hurtTime = 10;
-          player.vy = -3; // Knockback up
-          player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 4; // Knockback away
-          animal.attackCooldown = 60; // 1 second cooldown
-          animal.attackTimer = 15;
-        } else {
-          player.health -= animal.type === AnimalType.STRIPED_SNAKE ? 6 : 1;
-          player.hurtTime = 10;
+        player.health -= ANIMAL_DEFS[animal.type].attackDamage;
+        player.hurtTime = 10;
+        player.vy = -3; // Knockback up
+        player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 4;
+        animal.attackCooldown = 60;
+        animal.attackTimer = 15;
+        if (animal.type !== AnimalType.TIGER_SNAKE) {
           player.poisonTimer = 300; // 5 seconds at 60fps
-          player.poisonTick = 60; // First tick after 1 second
-          player.vy = -3; // Knockback up
-          player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 4; // Knockback away
-          animal.attackCooldown = 60; // 1 second cooldown
-          animal.attackTimer = 15;
+          player.poisonTick = 60;
         }
       }
     }
@@ -912,11 +905,11 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
   // Pig and Cow charge logic
   if ((animal.type === AnimalType.PIG || animal.type === AnimalType.COW) && animal.aggro) {
     if ((animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
-      player.health -= animal.type === AnimalType.COW ? 3 : 2;
+      player.health -= ANIMAL_DEFS[animal.type].attackDamage;
       player.hurtTime = 10;
       player.vy = -3; // Knockback up
       player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 5; // Strong knockback away
-      animal.attackCooldown = 60; // 1 second cooldown
+      animal.attackCooldown = 60;
       animal.attackTimer = 15;
     }
   }
@@ -924,11 +917,11 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
   // Shark bite logic
   if (animal.type === AnimalType.SHARK) {
     if ((animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
-      player.health -= 5; // 2.5 hearts
+      player.health -= ANIMAL_DEFS[animal.type].attackDamage;
       player.hurtTime = 10;
       player.vy = -2; // Knockback up
-      player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 3; // Knockback away
-      animal.attackCooldown = 60; // 1 second cooldown
+      player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 3;
+      animal.attackCooldown = 60;
       animal.attackTimer = 15;
     }
   }
@@ -950,11 +943,11 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     if ((animal.attackCooldown <= 0)) {
       let attacked = false;
       if (!animal.tamed && isIntersecting(animal, player) && !player.isFlying) {
-        player.health -= 8; // 8 hearts
+        player.health -= ANIMAL_DEFS[animal.type].attackDamage;
         player.hurtTime = 10;
         player.vy = -3; // Knockback up
-        player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 4; // Knockback away
-        animal.attackCooldown = 60; // 1 second cooldown
+        player.vx = (player.x + player.width / 2 > animal.x + animal.width / 2 ? 1 : -1) * 4;
+        animal.attackCooldown = 60;
         animal.attackTimer = 15;
         attacked = true;
       }

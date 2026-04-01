@@ -157,7 +157,9 @@ const loadedMaxX = Math.min(
 for (const [id, f] of Object.entries(state.furnaces)) {
   const furnace = f as FurnaceData;
   // Check if furnace block still exists
-  const [fx, fy] = id.split(',').map(Number);
+  const numKey = Number(id);
+  const fx = Math.floor(numKey / WORLD_HEIGHT);
+  const fy = numKey % WORLD_HEIGHT;
   if (isNaN(fx) || isNaN(fy) || fx < 0 || fx >= WORLD_WIDTH || fy < 0 || fy >= WORLD_HEIGHT) {
     delete state.furnaces[id];
     continue;
