@@ -44,11 +44,10 @@ const gridY = Math.floor(worldY / TILE_SIZE);
 
 const playerCenterX = state.player.x + state.player.width / 2;
 const playerCenterY = state.player.y + state.player.height / 2;
-const dist = Math.sqrt(Math.pow(worldX - playerCenterX, 2) + Math.pow(worldY - playerCenterY, 2));
-
 const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
-if (dist <= currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
+if (distSq <= currentReach * currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.lineWidth = 2;
   ctx.strokeRect(gridX * TILE_SIZE, gridY * TILE_SIZE, TILE_SIZE, TILE_SIZE);

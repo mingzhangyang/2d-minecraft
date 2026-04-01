@@ -293,6 +293,11 @@ export const updateAnimals = ({
   animalGrid.clear();
   for (const a of state.animals) animalGrid.insert(a);
 
+  // Pre-filter food items once per frame so herbivores/ants don't scan all dropped items
+  const foodItems = state.droppedItems.filter(
+    item => item.type === BlockType.APPLE || item.type === BlockType.WORM
+  );
+
 // Animal logic
 for (let i = state.animals.length - 1; i >= 0; i--) {
   const animal = state.animals[i];
@@ -385,7 +390,6 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
 
   const isCat = animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR;
   if (isCat && animal.health < 20) {
-    if (animal.regenTimer === undefined) animal.regenTimer = 0;
     animal.regenTimer++;
     if (animal.regenTimer >= 60) {
       animal.health++;
@@ -396,6 +400,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
   animal.stateTime--;
   
   let targetX: number | null = null;
+  let isTargetingPlayer = false;
   let fleeX: number | null = null;
   
   // Flee from predators
@@ -415,6 +420,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
         animal.aggro = false; // Lose aggro if player runs far away
       } else {
         targetX = player.x;
+        isTargetingPlayer = true;
       }
     } else if (fleeX === null) {
       // Flee from snakes – use spatial hash for O(1) lookup
@@ -456,6 +462,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       const dist = Math.hypot(animal.x - player.x, animal.y - player.y);
       if (dist < 300) {
         targetX = player.x;
+        isTargetingPlayer = true;
       }
     }
   }
@@ -477,7 +484,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     if (targetAnimal) {
       targetX = targetAnimal.x;
       // If close enough, attack
-      if (closestDist < 40 && (!animal.attackCooldown || animal.attackCooldown <= 0)) {
+      if (closestDist < 40 && (animal.attackCooldown <= 0)) {
         targetAnimal.health -= 5;
         playAnimalSfx(targetAnimal, 'normal');
         targetAnimal.hurtTime = 20;
@@ -490,36 +497,35 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
   // Seek food if not fleeing
   if (fleeX === null && targetX === null) {
     if (animal.type === AnimalType.PIG || animal.type === AnimalType.COW || animal.type === AnimalType.CHICKEN) {
-       // Seek tall grass or dropped apple/worm
+       // Seek dropped apple/worm (pre-filtered list, no full scan)
        let closestDist = 300;
-       for (const item of state.droppedItems) {
-         if (item.type === BlockType.APPLE || item.type === BlockType.WORM) {
-           const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
-           if (dist < closestDist) {
-             closestDist = dist;
-             targetX = item.x;
-           }
+       for (const item of foodItems) {
+         const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
+         if (dist < closestDist) {
+           closestDist = dist;
+           targetX = item.x;
          }
        }
        if (targetX === null) {
-         // Look for tall grass
+         // Look for tall grass using squared distance to avoid sqrt
          const searchRadius = 5;
          const tileX = Math.floor(animal.x / TILE_SIZE);
          const tileY = Math.floor(animal.y / TILE_SIZE);
+         let closestGrassSq = 300 * 300;
          for (let dx = -searchRadius; dx <= searchRadius; dx++) {
            for (let dy = -searchRadius; dy <= searchRadius; dy++) {
              const x = tileX + dx;
-              const y = tileY + dy;
-              if (state.world[x] && isDecorationBlock(state.world[x][y])) {
-                const dist = Math.hypot(dx * TILE_SIZE, dy * TILE_SIZE);
-                if (dist < closestDist) {
-                  closestDist = dist;
-                  targetX = x * TILE_SIZE;
-                }
-              }
-            }
-          }
-        }
+             const y = tileY + dy;
+             if (state.world[x] && isDecorationBlock(state.world[x][y])) {
+               const distSq = (dx * TILE_SIZE) ** 2 + (dy * TILE_SIZE) ** 2;
+               if (distSq < closestGrassSq) {
+                 closestGrassSq = distSq;
+                 targetX = x * TILE_SIZE;
+               }
+             }
+           }
+         }
+       }
     } else if (animal.type === AnimalType.SNAKE || animal.type === AnimalType.STRIPED_SNAKE || animal.type === AnimalType.TIGER_SNAKE) {
        if (animal.aggro) {
          const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
@@ -527,6 +533,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
            animal.aggro = false; // Lose aggro if player runs far away
          } else {
            targetX = player.x;
+           isTargetingPlayer = true;
          }
        }
        
@@ -545,15 +552,13 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
          }
        }
     } else if (animal.type === AnimalType.ANT) {
-       // Seek dropped apple/worm
+       // Seek dropped apple/worm (pre-filtered list, no full scan)
        let closestDist = 200;
-       for (const item of state.droppedItems) {
-         if (item.type === BlockType.APPLE || item.type === BlockType.WORM) {
-           const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
-           if (dist < closestDist) {
-             closestDist = dist;
-             targetX = item.x;
-           }
+       for (const item of foodItems) {
+         const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
+         if (dist < closestDist) {
+           closestDist = dist;
+           targetX = item.x;
          }
        }
     } else if (animal.type === AnimalType.BIRD) {
@@ -593,8 +598,10 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       
       if (targetEntity) {
         targetX = targetEntity.x;
+        if (targetEntity === player) isTargetingPlayer = true;
       } else if (animal.tamed && distToPlayer > 100) {
         targetX = player.x;
+        isTargetingPlayer = true;
       } else {
         // Wander randomly
         if (Math.random() < 0.01) {
@@ -636,7 +643,8 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     }
     if (player.y < 30 * TILE_SIZE && !hasFullCocoaArmor) {
       targetX = player.x;
-      if (Math.abs(player.x - animal.x) < 150 && (animal.attackCooldown ?? 0) <= 0) {
+      isTargetingPlayer = true;
+      if (Math.abs(player.x - animal.x) < 150 && animal.attackCooldown <= 0) {
         animal.state = 'attacking';
         animal.stateTime = 30;
         animal.attackCooldown = 60;
@@ -654,13 +662,13 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     else if ((animal.type === AnimalType.PIG || animal.type === AnimalType.COW) && animal.aggro) speed *= 2.5; // Charge fast
     else if (animal.type === AnimalType.SNAKE || animal.type === AnimalType.STRIPED_SNAKE || animal.type === AnimalType.TIGER_SNAKE) speed *= 1.5;
     else if (animal.type === AnimalType.ANT) speed *= 0.5;
-    else if (animal.type === AnimalType.SHARK && targetX === player.x) speed *= 2.0; // Sharks swim fast when attacking
+    else if (animal.type === AnimalType.SHARK && isTargetingPlayer) speed *= 2.0; // Sharks swim fast when attacking
     else if (animal.type === AnimalType.ORCA && targetX !== null) speed *= 2.0; // Orcas swim fast when attacking
     else if (animal.type === AnimalType.ORCA || animal.type === AnimalType.DOLPHIN) speed *= 1.5;
     else if (animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR) {
-      speed *= (targetX === player.x ? 2.5 : 1.0); // Sprint when attacking
+      speed *= (isTargetingPlayer ? 2.5 : 1.0); // Sprint when attacking
     } else if (animal.type === AnimalType.COCOA_CAT) {
-      speed *= (targetX === player.x ? 3.0 : 1.0);
+      speed *= (isTargetingPlayer ? 3.0 : 1.0);
     }
     
     animal.vx = speed * animal.facing;
@@ -703,7 +711,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     // Fish swim in water
     if (inWater) {
       animal.vy += (Math.random() - 0.5) * 0.2;
-      if (animal.type === AnimalType.SHARK && targetX === player.x) {
+      if (animal.type === AnimalType.SHARK && isTargetingPlayer) {
          // Swim towards player vertically
          if (player.y < animal.y) animal.vy -= 0.2;
          else if (player.y > animal.y) animal.vy += 0.2;
@@ -837,7 +845,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
     
     if (animal.aggro) {
       // Launch at player if close enough and grounded
-      if (distToPlayer < 120 && (!animal.launchCooldown || animal.launchCooldown <= 0) && animal.vy === 0) {
+      if (distToPlayer < 120 && (animal.launchCooldown <= 0) && animal.vy === 0) {
         animal.state = 'launching';
         animal.vy = -6; // Jump up
         animal.vx = (player.x > animal.x ? 1 : -1) * 5; // Leap towards player
@@ -846,7 +854,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       }
       
       // Bite player
-      if ((!animal.attackCooldown || animal.attackCooldown <= 0) && isIntersecting(animal, player)) {
+      if ((animal.attackCooldown <= 0) && isIntersecting(animal, player)) {
         if (animal.type === AnimalType.TIGER_SNAKE) {
           player.health -= 2; // 1 heart
           player.hurtTime = 10;
@@ -867,7 +875,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       }
     }
     // Bite other animals – use spatial hash for candidates
-    if (!animal.attackCooldown || animal.attackCooldown <= 0) {
+    if (animal.attackCooldown <= 0) {
       const nearbyForBite = animalGrid.queryRadius(animal.x, animal.y, 64);
       for (const other of nearbyForBite) {
         if (other !== animal && isIntersecting(animal, other)) {
@@ -903,7 +911,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
 
   // Pig and Cow charge logic
   if ((animal.type === AnimalType.PIG || animal.type === AnimalType.COW) && animal.aggro) {
-    if ((!animal.attackCooldown || animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
+    if ((animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
       player.health -= animal.type === AnimalType.COW ? 3 : 2;
       player.hurtTime = 10;
       player.vy = -3; // Knockback up
@@ -915,7 +923,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
 
   // Shark bite logic
   if (animal.type === AnimalType.SHARK) {
-    if ((!animal.attackCooldown || animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
+    if ((animal.attackCooldown <= 0) && isIntersecting(animal, player) && !player.isFlying) {
       player.health -= 5; // 2.5 hearts
       player.hurtTime = 10;
       player.vy = -2; // Knockback up
@@ -928,7 +936,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
   // Big Cats bite logic
   if (animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR) {
     // Pounce logic
-    if (targetX !== null && (!animal.launchCooldown || animal.launchCooldown <= 0) && animal.vy === 0) {
+    if (targetX !== null && (animal.launchCooldown <= 0) && animal.vy === 0) {
       const hDist = Math.abs(targetX - animal.x);
       if (hDist < 150 && hDist > 40) {
         animal.state = 'launching';
@@ -939,7 +947,7 @@ for (let i = state.animals.length - 1; i >= 0; i--) {
       }
     }
 
-    if ((!animal.attackCooldown || animal.attackCooldown <= 0)) {
+    if ((animal.attackCooldown <= 0)) {
       let attacked = false;
       if (!animal.tamed && isIntersecting(animal, player) && !player.isFlying) {
         player.health -= 8; // 8 hearts

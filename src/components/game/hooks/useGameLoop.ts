@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { soundEngine } from '../../../utils/SoundEngine';
-import { MAX_DURABILITY, REACH, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { BASE_ATTACK_DAMAGE, MAX_DURABILITY, POISON_WEAPONS, REACH, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import { drawGame } from '../render/drawGame';
@@ -60,6 +60,10 @@ export const useGameLoop = ({
 
     let animationFrameId: number;
     let frameCount = 0;
+    let showDebug = false;
+    let fpsFrameCount = 0;
+    let lastFpsTime = performance.now();
+    let currentFps = 0;
     const state = gameState.current;
 
     // Try to load a saved game; fall back to spawn-point Y
@@ -108,6 +112,9 @@ export const useGameLoop = ({
       }
       if (e.key.toLowerCase() === 'h') {
         setShowHotbar(prev => !prev);
+      }
+      if (e.code === 'Backquote') {
+        showDebug = !showDebug;
       }
       if (e.code === 'KeyI' || e.code === 'KeyE' || e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'e') {
         setIsInventoryOpen(prev => {
@@ -218,11 +225,10 @@ export const useGameLoop = ({
       if (gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
         const playerCenterX = state.player.x + state.player.width / 2;
         const playerCenterY = state.player.y + state.player.height / 2;
-        const dist = Math.sqrt(Math.pow(worldX - playerCenterX, 2) + Math.pow(worldY - playerCenterY, 2));
-
         const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+        const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
-        if (dist <= currentReach) {
+        if (distSq <= currentReach * currentReach) {
           if (button === 2) { // Right click: Place/Interact
             // Check if clicking an animal to tame
             const isMeat = isTamingFood(state.selectedBlock);
@@ -311,28 +317,12 @@ export const useGameLoop = ({
               ) {
                 if (animal.hurtTime <= 0) {
                   const hasItem = (state.player.inventory[state.selectedBlock] || 0) > 0;
-                  let damage = 2;
+                  let damage = BASE_ATTACK_DAMAGE;
                   if (hasItem) {
-                    if (state.selectedBlock === BlockType.FANG) {
-                      damage = 4;
+                    damage = WEAPON_DAMAGE[state.selectedBlock] ?? BASE_ATTACK_DAMAGE;
+                    if (POISON_WEAPONS.has(state.selectedBlock)) {
                       animal.poisonTimer = 300; // 5 seconds of poison
                       animal.poisonTick = 60;
-                    } else if (state.selectedBlock === BlockType.WOODEN_SWORD) {
-                      damage = 5;
-                    } else if (state.selectedBlock === BlockType.FANG_LANCE) {
-                      damage = 7;
-                      animal.poisonTimer = 300;
-                      animal.poisonTick = 60;
-                    } else if (state.selectedBlock === BlockType.WOODEN_PICKAXE) {
-                      damage = 3;
-                    } else if (state.selectedBlock === BlockType.STONE_PICKAXE) {
-                      damage = 4;
-                    } else if (state.selectedBlock === BlockType.IRON_PICKAXE) {
-                      damage = 5;
-                    } else if (state.selectedBlock === BlockType.GOLD_PICKAXE) {
-                      damage = 3;
-                    } else if (state.selectedBlock === BlockType.DIAMOND_PICKAXE) {
-                      damage = 6;
                     }
                   }
 
@@ -442,7 +432,28 @@ export const useGameLoop = ({
       }
       
       draw();
-      
+
+      // FPS tracking
+      fpsFrameCount++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 500) {
+        currentFps = Math.round(fpsFrameCount * 1000 / (now - lastFpsTime));
+        fpsFrameCount = 0;
+        lastFpsTime = now;
+      }
+
+      // Debug overlay (toggle with ` key)
+      if (showDebug) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        ctx.fillRect(8, 8, 140, 48);
+        ctx.fillStyle = '#00ff88';
+        ctx.font = '13px monospace';
+        ctx.fillText(`FPS: ${currentFps}`, 14, 26);
+        ctx.fillText(`Entities: ${state.animals.length}  Items: ${state.droppedItems.length}`, 14, 46);
+        ctx.restore();
+      }
+
       // Add a visual indicator for slow motion
       if (isSlowMo) {
         const canvas = canvasRef.current;

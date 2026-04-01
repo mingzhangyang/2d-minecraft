@@ -155,3 +155,18 @@ export const MAX_DURABILITY: Record<number, number> = {
 };
 
 export const SPAWN_X = 50;
+
+export const BASE_ATTACK_DAMAGE = 2;
+
+export const WEAPON_DAMAGE: Partial<Record<BlockType, number>> = {
+  [BlockType.FANG]: 4,
+  [BlockType.WOODEN_SWORD]: 5,
+  [BlockType.FANG_LANCE]: 7,
+  [BlockType.WOODEN_PICKAXE]: 3,
+  [BlockType.STONE_PICKAXE]: 4,
+  [BlockType.IRON_PICKAXE]: 5,
+  [BlockType.GOLD_PICKAXE]: 3,
+  [BlockType.DIAMOND_PICKAXE]: 6,
+};
+
+export const POISON_WEAPONS = new Set<BlockType>([BlockType.FANG, BlockType.FANG_LANCE]);

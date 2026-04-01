@@ -81,11 +81,10 @@ if (state.mouse.leftDown) {
   const gridY = Math.floor(worldY / TILE_SIZE);
   const playerCenterX = player.x + player.width / 2;
   const playerCenterY = player.y + player.height / 2;
-  const dist = Math.sqrt(Math.pow(worldX - playerCenterX, 2) + Math.pow(worldY - playerCenterY, 2));
-
   const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+  const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
-  if (!hoveringAnimal && dist <= currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
+  if (!hoveringAnimal && distSq <= currentReach * currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
     if (state.world[gridX][gridY] !== BlockType.AIR) {
       if (state.mining.x === gridX && state.mining.y === gridY) {
         state.mining.progress += 1;
