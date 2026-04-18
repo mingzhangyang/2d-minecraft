@@ -1,5 +1,5 @@
 import { soundEngine } from '../../../utils/SoundEngine';
-import { BASE_ATTACK_DAMAGE, MAX_DURABILITY, POISON_WEAPONS, REACH, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { BASE_ATTACK_DAMAGE, MAX_DURABILITY, POISON_WEAPONS, REACH, SNAKE_ALERT_RADIUS, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import type { GameState } from '../runtime';
@@ -71,7 +71,7 @@ export const handleInteract = (
 
     // Open furnace UI
     if (state.world[gridX][gridY] === BlockType.FURNACE) {
-      const id = String(gridX * WORLD_HEIGHT + gridY);
+      const id = `${gridX},${gridY}`;
       if (!state.furnaces[id]) {
         state.furnaces[id] = { input: null, fuel: null, output: null, progress: 0, fuelLeft: 0, maxFuel: 0 };
       }
@@ -207,7 +207,7 @@ export const handleInteract = (
             if (
               other !== animal &&
               (other.type === AnimalType.SNAKE || other.type === AnimalType.STRIPED_SNAKE || other.type === AnimalType.TIGER_SNAKE) &&
-              Math.hypot(other.x - animal.x, other.y - animal.y) < 400
+              Math.hypot(other.x - animal.x, other.y - animal.y) < SNAKE_ALERT_RADIUS
             ) {
               other.aggro = true;
             }

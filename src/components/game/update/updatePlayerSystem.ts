@@ -1,4 +1,5 @@
 import { soundEngine } from '../../../utils/SoundEngine';
+import { nextId } from '../ids';
 import {
   GRAVITY,
   JUMP_FORCE,
@@ -124,7 +125,7 @@ if (state.mouse.leftDown) {
             vx: (Math.random() - 0.5) * 4,
             vy: -4,
             type: dropType,
-            id: Math.random()
+            id: nextId()
           });
           if ((type === BlockType.LEAVES || type === BlockType.PINE_LEAVES || type === BlockType.PALM_LEAVES) && Math.random() < 0.1) {
             state.droppedItems.push({
@@ -133,7 +134,7 @@ if (state.mouse.leftDown) {
               vx: (Math.random() - 0.5) * 4,
               vy: -4,
               type: BlockType.APPLE,
-              id: Math.random()
+              id: nextId()
             });
           }
           if (type === BlockType.DIRT && Math.random() < 0.15) {
@@ -143,7 +144,7 @@ if (state.mouse.leftDown) {
               vx: (Math.random() - 0.5) * 4,
               vy: -4,
               type: BlockType.WORM,
-              id: Math.random()
+              id: nextId()
             });
           }
         }
@@ -232,7 +233,7 @@ if (touchingPortal) {
         vx: 0,
         vy: 0,
         type: AnimalType.COCOA_CAT,
-        id: Math.random(),
+        id: nextId(),
         state: 'idle',
         stateTime: 100,
         facing: -1,

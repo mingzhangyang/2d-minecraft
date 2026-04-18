@@ -1,4 +1,5 @@
 import { ANIMAL_DEFS } from '../animalDefinitions';
+import { ANIMAL_MELEE_RANGE, CAT_POUNCE_MAX_RANGE, CAT_POUNCE_MIN_RANGE, SNAKE_LAUNCH_RANGE } from '../constants';
 import type { GameState } from '../runtime';
 import { AnimalType } from '../types';
 import type { Animal } from '../types';
@@ -42,7 +43,7 @@ export const applyAnimalCombat = (
     }
 
     if (animal.aggro) {
-      if (distToPlayer < 120 && animal.launchCooldown <= 0 && animal.vy === 0) {
+      if (distToPlayer < SNAKE_LAUNCH_RANGE && animal.launchCooldown <= 0 && animal.vy === 0) {
         animal.state = 'launching';
         animal.vy = -6;
         animal.vx = (player.x > animal.x ? 1 : -1) * 5;
@@ -64,7 +65,7 @@ export const applyAnimalCombat = (
     }
 
     if (animal.attackCooldown <= 0) {
-      for (const other of animalGrid.queryRadius(animal.x, animal.y, 64)) {
+      for (const other of animalGrid.queryRadius(animal.x, animal.y, ANIMAL_MELEE_RANGE)) {
         if (other === animal) continue;
         if (other.type === AnimalType.SNAKE || other.type === AnimalType.STRIPED_SNAKE || other.type === AnimalType.TIGER_SNAKE) continue;
         if (!isIntersecting(animal, other)) continue;
@@ -122,7 +123,7 @@ export const applyAnimalCombat = (
   ) {
     if (targetX !== null && animal.launchCooldown <= 0 && animal.vy === 0) {
       const hDist = Math.abs(targetX - animal.x);
-      if (hDist < 150 && hDist > 40) {
+      if (hDist < CAT_POUNCE_MAX_RANGE && hDist > CAT_POUNCE_MIN_RANGE) {
         animal.state = 'launching';
         animal.vy = -6;
         animal.vx = (targetX > animal.x ? 1 : -1) * 6;
@@ -143,7 +144,7 @@ export const applyAnimalCombat = (
         attacked = true;
       }
       if (!attacked) {
-        for (const other of animalGrid.queryRadius(animal.x, animal.y, 64)) {
+        for (const other of animalGrid.queryRadius(animal.x, animal.y, ANIMAL_MELEE_RANGE)) {
           if (other.id === animal.id) continue;
           if (other.type === AnimalType.LEOPARD || other.type === AnimalType.JAGUAR || other.type === AnimalType.BLACK_JAGUAR) continue;
           if (!isIntersecting(animal, other)) continue;

@@ -1,4 +1,19 @@
-import { TILE_SIZE } from '../constants';
+import {
+  ANIMAL_AGGRO_LOSS_DISTANCE,
+  ANT_FLEE_DETECTION_RADIUS,
+  ANT_FOOD_SEEK_RANGE,
+  CAT_TAMED_FOLLOW_DISTANCE,
+  CAT_VISION_RANGE,
+  COCOA_CAT_ATTACK_RANGE,
+  COCOA_CAT_HEIGHT_THRESHOLD_TILES,
+  HERBIVORE_FOOD_SEEK_RANGE,
+  ORCA_HUNT_RADIUS,
+  ORCA_MELEE_RANGE,
+  PREY_FLEE_DETECTION_RADIUS,
+  SHARK_ATTACK_RANGE,
+  SNAKE_HUNT_RANGE,
+  TILE_SIZE,
+} from '../constants';
 import type { GameState } from '../runtime';
 import { isDecorationBlock } from '../runtime';
 import { AnimalType, BlockType } from '../types';
@@ -46,17 +61,17 @@ export const computeAnimalTarget = (
     }
     if (animal.aggro) {
       const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
-      if (distToPlayer > 600) {
+      if (distToPlayer > ANIMAL_AGGRO_LOSS_DISTANCE) {
         animal.aggro = false;
       } else {
         targetX = player.x;
         isTargetingPlayer = true;
       }
     } else if (fleeX === null) {
-      for (const other of animalGrid.queryRadius(animal.x, animal.y, 200)) {
+      for (const other of animalGrid.queryRadius(animal.x, animal.y, PREY_FLEE_DETECTION_RADIUS)) {
         if (
           (other.type === AnimalType.SNAKE || other.type === AnimalType.STRIPED_SNAKE || other.type === AnimalType.TIGER_SNAKE) &&
-          Math.hypot(animal.x - other.x, animal.y - other.y) < 200
+          Math.hypot(animal.x - other.x, animal.y - other.y) < PREY_FLEE_DETECTION_RADIUS
         ) {
           fleeX = other.x;
           break;
@@ -64,10 +79,10 @@ export const computeAnimalTarget = (
       }
     }
   } else if (animal.type === AnimalType.ANT) {
-    for (const other of animalGrid.queryRadius(animal.x, animal.y, 150)) {
+    for (const other of animalGrid.queryRadius(animal.x, animal.y, ANT_FLEE_DETECTION_RADIUS)) {
       if (
         (other.type === AnimalType.CHICKEN || other.type === AnimalType.SNAKE || other.type === AnimalType.STRIPED_SNAKE || other.type === AnimalType.TIGER_SNAKE) &&
-        Math.hypot(animal.x - other.x, animal.y - other.y) < 150
+        Math.hypot(animal.x - other.x, animal.y - other.y) < ANT_FLEE_DETECTION_RADIUS
       ) {
         fleeX = other.x;
         break;
@@ -85,7 +100,7 @@ export const computeAnimalTarget = (
     const playerInWater =
       state.world[px]?.[Math.floor(player.y / TILE_SIZE)] === BlockType.WATER ||
       state.world[px]?.[Math.floor((player.y + player.height) / TILE_SIZE)] === BlockType.WATER;
-    if (playerInWater && Math.hypot(animal.x - player.x, animal.y - player.y) < 300) {
+    if (playerInWater && Math.hypot(animal.x - player.x, animal.y - player.y) < SHARK_ATTACK_RANGE) {
       targetX = player.x;
       isTargetingPlayer = true;
     }
@@ -93,9 +108,9 @@ export const computeAnimalTarget = (
 
   // --- Orca hunts other sea animals (melee applied here as side-effect of targeting) ---
   if (animal.type === AnimalType.ORCA && fleeX === null) {
-    let closestDist = 400;
+    let closestDist = ORCA_HUNT_RADIUS;
     let targetAnimal: Animal | null = null;
-    for (const other of animalGrid.queryRadius(animal.x, animal.y, 400)) {
+    for (const other of animalGrid.queryRadius(animal.x, animal.y, ORCA_HUNT_RADIUS)) {
       if (
         other.id !== animal.id &&
         (other.type === AnimalType.FISH || other.type === AnimalType.DOLPHIN || other.type === AnimalType.SHARK)
@@ -106,7 +121,7 @@ export const computeAnimalTarget = (
     }
     if (targetAnimal) {
       targetX = targetAnimal.x;
-      if (closestDist < 40 && animal.attackCooldown <= 0) {
+      if (closestDist < ORCA_MELEE_RANGE && animal.attackCooldown <= 0) {
         targetAnimal.health -= 5;
         playAnimalSfx(targetAnimal, 'normal');
         targetAnimal.hurtTime = 20;
@@ -119,7 +134,7 @@ export const computeAnimalTarget = (
   // --- Seek food / prey when not fleeing ---
   if (fleeX === null && targetX === null) {
     if (animal.type === AnimalType.PIG || animal.type === AnimalType.COW || animal.type === AnimalType.CHICKEN) {
-      let closestDist = 300;
+      let closestDist = HERBIVORE_FOOD_SEEK_RANGE;
       for (const item of foodItems) {
         const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
         if (dist < closestDist) { closestDist = dist; targetX = item.x; }
@@ -127,7 +142,7 @@ export const computeAnimalTarget = (
       if (targetX === null) {
         const tileX = Math.floor(animal.x / TILE_SIZE);
         const tileY = Math.floor(animal.y / TILE_SIZE);
-        let closestGrassSq = 300 * 300;
+        let closestGrassSq = HERBIVORE_FOOD_SEEK_RANGE * HERBIVORE_FOOD_SEEK_RANGE;
         for (let dx = -5; dx <= 5; dx++) {
           for (let dy = -5; dy <= 5; dy++) {
             const x = tileX + dx;
@@ -142,7 +157,7 @@ export const computeAnimalTarget = (
     } else if (animal.type === AnimalType.SNAKE || animal.type === AnimalType.STRIPED_SNAKE || animal.type === AnimalType.TIGER_SNAKE) {
       if (animal.aggro) {
         const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
-        if (distToPlayer > 600) {
+        if (distToPlayer > ANIMAL_AGGRO_LOSS_DISTANCE) {
           animal.aggro = false;
         } else {
           targetX = player.x;
@@ -150,8 +165,8 @@ export const computeAnimalTarget = (
         }
       }
       if (!animal.aggro) {
-        let closestDist = 250;
-        for (const other of animalGrid.queryRadius(animal.x, animal.y, 250)) {
+        let closestDist = SNAKE_HUNT_RANGE;
+        for (const other of animalGrid.queryRadius(animal.x, animal.y, SNAKE_HUNT_RANGE)) {
           if (other.type === AnimalType.PIG || other.type === AnimalType.CHICKEN || other.type === AnimalType.ANT) {
             const dist = Math.hypot(animal.x - other.x, animal.y - other.y);
             if (dist < closestDist) { closestDist = dist; targetX = other.x; }
@@ -159,7 +174,7 @@ export const computeAnimalTarget = (
         }
       }
     } else if (animal.type === AnimalType.ANT) {
-      let closestDist = 200;
+      let closestDist = ANT_FOOD_SEEK_RANGE;
       for (const item of foodItems) {
         const dist = Math.hypot(animal.x - item.x, animal.y - item.y);
         if (dist < closestDist) { closestDist = dist; targetX = item.x; }
@@ -176,7 +191,7 @@ export const computeAnimalTarget = (
     } else if (
       animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR
     ) {
-      let closestDist = 400;
+      let closestDist = CAT_VISION_RANGE;
       let targetEntity: { x: number; y: number } | null = null;
       const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
       if (!animal.tamed && distToPlayer < closestDist) {
@@ -195,7 +210,7 @@ export const computeAnimalTarget = (
       if (targetEntity) {
         targetX = targetEntity.x;
         if (targetEntity === player) isTargetingPlayer = true;
-      } else if (animal.tamed && distToPlayer > 100) {
+      } else if (animal.tamed && distToPlayer > CAT_TAMED_FOLLOW_DISTANCE) {
         targetX = player.x;
         isTargetingPlayer = true;
       } else {
@@ -253,10 +268,10 @@ export const applyCocoaCatBehavior = (
   if (isIntersecting(animal, player) && (!hasFullCocoaArmor || player.isFlying)) {
     player.health = 0;
   }
-  if (player.y < 30 * TILE_SIZE && !hasFullCocoaArmor) {
+  if (player.y < COCOA_CAT_HEIGHT_THRESHOLD_TILES * TILE_SIZE && !hasFullCocoaArmor) {
     intent.targetX = player.x;
     intent.isTargetingPlayer = true;
-    if (Math.abs(player.x - animal.x) < 150 && animal.attackCooldown <= 0) {
+    if (Math.abs(player.x - animal.x) < COCOA_CAT_ATTACK_RANGE && animal.attackCooldown <= 0) {
       animal.state = 'attacking';
       animal.stateTime = 30;
       animal.attackCooldown = 60;

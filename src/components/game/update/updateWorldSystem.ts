@@ -1,4 +1,5 @@
 import { soundEngine } from '../../../utils/SoundEngine';
+import { nextId } from '../ids';
 import { GRAVITY, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import type { GameState } from '../runtime';
 import { clonePlayer, getFuelTicks, getSmeltResult, respawnPlayer } from '../runtime';
@@ -219,7 +220,7 @@ for (const [id, f] of Object.entries(state.furnaces)) {
             vx: (Math.random() - 0.5) * 4,
             vy: -4,
             type: item.type,
-            id: Math.random()
+            id: nextId()
           });
         }
       }

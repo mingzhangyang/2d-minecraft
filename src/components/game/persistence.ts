@@ -6,6 +6,7 @@
  */
 import type { GameState } from './runtime';
 import { disposeWorldStreaming, generateWorld, getDirtyWorldEdits } from './world';
+import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
 
 const SAVE_KEY = 'blockbuilder_save_v2';
 const LEGACY_SAVE_KEYS = ['blockbuilder_save_v1'];
@@ -79,7 +80,9 @@ export const loadGame = (state: GameState): boolean => {
     disposeWorldStreaming(state.world);
     state.world = generateWorld();
     for (const [x, y, block] of data.worldDeltas) {
-      if (state.world[x]) state.world[x][y] = block;
+      if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
+        state.world[x][y] = block;
+      }
     }
 
     // Restore player

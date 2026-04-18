@@ -1,4 +1,5 @@
 import { SPAWN_X, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { nextId } from '../ids';
 import { Animal, AnimalType, BlockType } from '../types';
 import { ANIMAL_DEFS } from '../animalDefinitions';
 import { getBiome, getSurfaceY } from './generation';
@@ -142,7 +143,7 @@ export const spawnAnimals = (world: BlockType[][]): Animal[] => {
 
     for (let j = 0; j < numToSpawn; j++) {
       animals.push({
-        id: Math.random(),
+        id: nextId(),
         type,
         x: (x + (Math.random() - 0.5) * 2) * TILE_SIZE,
         y: spawnY * TILE_SIZE,

@@ -170,3 +170,51 @@ export const WEAPON_DAMAGE: Partial<Record<BlockType, number>> = {
 };
 
 export const POISON_WEAPONS = new Set<BlockType>([BlockType.FANG, BlockType.FANG_LANCE]);
+
+// ---------------------------------------------------------------------------
+// Animal behaviour distances (pixels unless noted)
+// ---------------------------------------------------------------------------
+/** Animals beyond this distance from the player are removed from the world. */
+export const ANIMAL_DESPAWN_DISTANCE = 3000;
+/** Animals will not spawn closer than this to the player. */
+export const ANIMAL_SPAWN_MIN_DISTANCE = 400;
+/** Aggressive animals lose their aggro when the player runs this far away. */
+export const ANIMAL_AGGRO_LOSS_DISTANCE = 600;
+/** Herbivores detect snakes within this radius and flee. */
+export const PREY_FLEE_DETECTION_RADIUS = 200;
+/** Ants flee from chickens and snakes within this radius. */
+export const ANT_FLEE_DETECTION_RADIUS = 150;
+/** Shark begins tracking the player when within this range (player must be in water). */
+export const SHARK_ATTACK_RANGE = 300;
+/** Orca searches for prey within this radius. */
+export const ORCA_HUNT_RADIUS = 400;
+/** Orca deals melee damage when within this distance of its target. */
+export const ORCA_MELEE_RANGE = 40;
+/** Distance at which herbivores scan for food items or grass. */
+export const HERBIVORE_FOOD_SEEK_RANGE = 300;
+/** Snakes search for prey within this radius. */
+export const SNAKE_HUNT_RANGE = 250;
+/** Ants scan for food items within this radius. */
+export const ANT_FOOD_SEEK_RANGE = 200;
+/** Big cats start hunting targets within this radius. */
+export const CAT_VISION_RANGE = 400;
+/** Tamed cats follow the player if the player is farther than this. */
+export const CAT_TAMED_FOLLOW_DISTANCE = 100;
+/** Snake launches itself at the player when within this horizontal distance. */
+export const SNAKE_LAUNCH_RANGE = 120;
+/** Snake and cat AABB melee range — attacks fire when within this many pixels. */
+export const ANIMAL_MELEE_RANGE = 64;
+/** Alert radius — hitting a snake alerts all snakes within this distance. */
+export const SNAKE_ALERT_RADIUS = 400;
+/** Cocoa Cat begins attacking when the player gets within this horizontal distance. */
+export const COCOA_CAT_ATTACK_RANGE = 150;
+/** Tile row threshold — Cocoa Cat activates when the player is above this Y (in tiles). */
+export const COCOA_CAT_HEIGHT_THRESHOLD_TILES = 30;
+/** Max horizontal distance at which big cats trigger a pounce leap. */
+export const CAT_POUNCE_MAX_RANGE = 150;
+/** Min horizontal distance required to pounce (prevents re-pouncing at point-blank). */
+export const CAT_POUNCE_MIN_RANGE = 40;
+/** Upward velocity applied when a big cat jumps over a wall or pounces. */
+export const CAT_JUMP_VELOCITY = -11.3;
+/** Birds stay at least this many pixels above the terrain surface. */
+export const BIRD_MIN_HEIGHT_ABOVE_SURFACE = 50;

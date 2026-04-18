@@ -7,9 +7,9 @@ import type { FurnaceData } from '../types';
 import { drawGame } from '../render/drawGame';
 import type { GameState, Rect } from '../runtime';
 import {
-  isNonCollidingBlock,
   isTransparentBlock,
 } from '../runtime';
+import { checkCollisionAgainstWorld } from '../update/collisionUtils';
 import { updateGame } from '../update/updateGame';
 import { handleInteract as _handleInteract } from '../update/playerInteractions';
 import { saveGame, loadGame } from '../persistence';
@@ -181,29 +181,8 @@ export const useGameLoop = ({
     window.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('contextmenu', handleContextMenu);
 
-    const checkCollision = (rect: { x: number; y: number; width: number; height: number }, animalType?: AnimalType) => {
-      const startX = Math.floor(rect.x / TILE_SIZE);
-      const endX = Math.floor((rect.x + rect.width) / TILE_SIZE);
-      const startY = Math.floor(rect.y / TILE_SIZE);
-      const endY = Math.floor((rect.y + rect.height) / TILE_SIZE);
-
-      for (let x = startX; x <= endX; x++) {
-        for (let y = startY; y <= endY; y++) {
-          if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
-            const block = state.world[x][y];
-            if (!isNonCollidingBlock(block)) {
-              if (animalType === AnimalType.TIGER_SNAKE && (block === BlockType.DIRT || block === BlockType.GRASS)) {
-                continue;
-              }
-              return true;
-            }
-          } else {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
+    const checkCollision = (rect: { x: number; y: number; width: number; height: number }, animalType?: AnimalType) =>
+      checkCollisionAgainstWorld(rect, state.world, animalType);
 
     const isIntersecting = (r1: Rect, r2: Rect) => {
       return !(

@@ -1,5 +1,13 @@
 import { soundEngine } from '../../../utils/SoundEngine';
-import { GRAVITY, REACH, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import {
+  ANIMAL_DESPAWN_DISTANCE,
+  ANIMAL_SPAWN_MIN_DISTANCE,
+  GRAVITY,
+  REACH,
+  TILE_SIZE,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+} from '../constants';
 import { getMaxStack } from '../crafting';
 import type { GameState } from '../runtime';
 import {
@@ -11,6 +19,7 @@ import type { CollisionChecker, Intersector } from './updateContext';
 import { getSurfaceY, getValidSpawnX } from '../world';
 import { SpatialHash } from '../spatialHash';
 import { ANIMAL_DEFS } from '../animalDefinitions';
+import { nextId } from '../ids';
 import {
   computeAnimalTarget,
   applyMovementState,
@@ -196,7 +205,7 @@ if (state.tick % 60 === 0) { // Check every second
   if (counts[typeToSpawn] < limits[typeToSpawn]) {
     const spawnX = getValidSpawnX(typeToSpawn, state.world, player.x);
 
-    if (spawnX !== null && Math.abs(spawnX * TILE_SIZE - player.x) > 400) {
+    if (spawnX !== null && Math.abs(spawnX * TILE_SIZE - player.x) > ANIMAL_SPAWN_MIN_DISTANCE) {
       const surfaceY = getSurfaceY(spawnX);
 
       let canSpawn = true;
@@ -238,7 +247,7 @@ if (state.tick % 60 === 0) { // Check every second
 
           for (let j = 0; j < numToSpawn; j++) {
             state.animals.push({
-              id: Math.random(),
+              id: nextId(),
               type: typeToSpawn,
               x: (spawnX + (Math.random() - 0.5) * 2) * TILE_SIZE,
               y: spawnY * TILE_SIZE,
@@ -281,7 +290,7 @@ const handleAnimalDeath = (animal: Animal, state: GameState): void => {
         vx: (Math.random() - 0.5) * 8,
         vy: -6,
         type,
-        id: Math.random(),
+        id: nextId(),
       });
     });
   } else if (animal.type !== AnimalType.ANT) {
@@ -304,7 +313,7 @@ const handleAnimalDeath = (animal: Animal, state: GameState): void => {
         vx: (Math.random() - 0.5) * 4,
         vy: -4,
         type: BlockType.MEAT,
-        id: Math.random(),
+        id: nextId(),
       });
     }
   }
@@ -343,7 +352,7 @@ export const updateAnimals = ({
   for (let i = state.animals.length - 1; i >= 0; i--) {
     const animal = state.animals[i];
 
-    if (Math.abs(animal.x - player.x) > 3000) {
+    if (Math.abs(animal.x - player.x) > ANIMAL_DESPAWN_DISTANCE) {
       state.animals.splice(i, 1);
       continue;
     }

@@ -1,4 +1,4 @@
-import { GRAVITY, JUMP_FORCE, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { BIRD_MIN_HEIGHT_ABOVE_SURFACE, CAT_JUMP_VELOCITY, GRAVITY, JUMP_FORCE, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import type { GameState } from '../runtime';
 import { isTreeBlock } from '../runtime';
 import { AnimalType, BlockType } from '../types';
@@ -49,7 +49,7 @@ export const applyAnimalPhysics = (
     if (animal.vy > 2) animal.vy = 2;
     if (animal.vy < -2) animal.vy = -2;
     const surfaceY = getSurfaceY(Math.floor(animal.x / TILE_SIZE)) * TILE_SIZE;
-    if (animal.y > surfaceY - 50) animal.vy -= 0.5;
+    if (animal.y > surfaceY - BIRD_MIN_HEIGHT_ABOVE_SURFACE) animal.vy -= 0.5;
   } else if (
     animal.type === AnimalType.FISH || animal.type === AnimalType.ORCA ||
     animal.type === AnimalType.DOLPHIN || animal.type === AnimalType.SHARK
@@ -117,11 +117,11 @@ export const applyAnimalPhysics = (
       const isCat =
         animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR;
       if (isCat && targetX !== null && animal.vy === GRAVITY) {
-        animal.vy = -11.3; // Jump 5 blocks to clear obstacle while chasing
+        animal.vy = CAT_JUMP_VELOCITY; // Jump 5 blocks to clear obstacle while chasing
       } else {
         animal.facing *= -1;
         if (Math.random() < 0.5 && animal.vy === GRAVITY) {
-          animal.vy = isCat ? -11.3 : -JUMP_FORCE * 0.8;
+          animal.vy = isCat ? CAT_JUMP_VELOCITY : -JUMP_FORCE * 0.8;
         }
       }
     }
