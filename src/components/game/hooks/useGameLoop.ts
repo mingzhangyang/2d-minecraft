@@ -1,20 +1,17 @@
 import { useEffect } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { soundEngine } from '../../../utils/SoundEngine';
-import { BASE_ATTACK_DAMAGE, MAX_DURABILITY, POISON_WEAPONS, REACH, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { MAX_DURABILITY, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import { drawGame } from '../render/drawGame';
 import type { GameState, Rect } from '../runtime';
 import {
-  isCookedMeat,
   isNonCollidingBlock,
-  isRawMeat,
-  isReplaceableBlock,
-  isTamingFood,
   isTransparentBlock,
 } from '../runtime';
 import { updateGame } from '../update/updateGame';
+import { handleInteract as _handleInteract } from '../update/playerInteractions';
 import { saveGame, loadGame } from '../persistence';
 import { disposeWorldStreaming } from '../world';
 
@@ -216,196 +213,14 @@ export const useGameLoop = ({
         r2.y + r2.height <= r1.y
       );
     };
-    const handleInteract = (button: number) => {
-      const worldX = state.mouse.x + state.camera.x;
-      const worldY = state.mouse.y + state.camera.y;
-      const gridX = Math.floor(worldX / TILE_SIZE);
-      const gridY = Math.floor(worldY / TILE_SIZE);
 
-      if (gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
-        const playerCenterX = state.player.x + state.player.width / 2;
-        const playerCenterY = state.player.y + state.player.height / 2;
-        const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
-        const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
-
-        if (distSq <= currentReach * currentReach) {
-          if (button === 2) { // Right click: Place/Interact
-            // Check if clicking an animal to tame
-            const isMeat = isTamingFood(state.selectedBlock);
-
-            if (isMeat && state.player.inventory[state.selectedBlock] > 0) {
-              for (const animal of state.animals) {
-                if (
-                  worldX >= animal.x && worldX <= animal.x + animal.width &&
-                  worldY >= animal.y && worldY <= animal.y + animal.height
-                ) {
-                  if (
-                    (animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR) &&
-                    !animal.tamed
-                  ) {
-                    animal.tamed = true;
-                    animal.aggro = false; // Stop attacking player
-                    state.player.inventory[state.selectedBlock]--;
-                    state.invChanged = true;
-                    return; // Tamed, don't place block
-                  }
-                }
-              }
-            }
-
-            // Check if clicking a furnace
-            if (state.world[gridX][gridY] === BlockType.FURNACE) {
-              const id = String(gridX * WORLD_HEIGHT + gridY);
-              if (!state.furnaces[id]) {
-                state.furnaces[id] = { input: null, fuel: null, output: null, progress: 0, fuelLeft: 0, maxFuel: 0 };
-              }
-              setFurnaceUI(state.furnaces[id]);
-              setOpenFurnaceId(id);
-              setIsInventoryOpen(true);
-              return;
-            }
-
-            if (state.selectedBlock === BlockType.APPLE) {
-              if (state.player.hunger < state.player.maxHunger && state.player.inventory[BlockType.APPLE] > 0) {
-                state.player.hunger = Math.min(state.player.maxHunger, state.player.hunger + 3);
-                state.player.inventory[BlockType.APPLE]--;
-                state.invChanged = true;
-                return; // Consumed, don't place
-              }
-            }
-            if (state.selectedBlock === BlockType.WORM) {
-              if (state.player.hunger < state.player.maxHunger && state.player.inventory[BlockType.WORM] > 0) {
-                state.player.hunger = Math.min(state.player.maxHunger, state.player.hunger + 1);
-                state.player.inventory[BlockType.WORM]--;
-                state.invChanged = true;
-                return; // Consumed, don't place
-              }
-            }
-            if (isRawMeat(state.selectedBlock)) {
-              if (state.player.hunger < state.player.maxHunger && state.player.inventory[state.selectedBlock] > 0) {
-                state.player.hunger = Math.min(state.player.maxHunger, state.player.hunger + 4);
-                state.player.health -= 2; // Raw meat damages you
-                state.player.hurtTime = 10;
-                state.player.inventory[state.selectedBlock]--;
-                state.invChanged = true;
-                return; // Consumed, don't place
-              }
-            }
-            if (isCookedMeat(state.selectedBlock)) {
-              if (state.player.hunger < state.player.maxHunger && state.player.inventory[state.selectedBlock] > 0) {
-                state.player.hunger = Math.min(state.player.maxHunger, state.player.hunger + 8);
-                state.player.inventory[state.selectedBlock]--;
-                state.invChanged = true;
-                return; // Consumed, don't place
-              }
-            }
-            if (isReplaceableBlock(state.world[gridX][gridY]) && state.player.inventory[state.selectedBlock] > 0) {
-              const blockRect = { x: gridX * TILE_SIZE, y: gridY * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
-              if (!isIntersecting(state.player, blockRect)) {
-                soundEngine.place();
-                state.world[gridX][gridY] = state.selectedBlock;
-                state.player.inventory[state.selectedBlock]--;
-                state.invChanged = true;
-              }
-            }
-          } else if (button === 0) { // Left click: Attack
-            state.player.attackTimer = 15; // Set attack animation timer
-            for (const animal of state.animals) {
-              if (
-                worldX >= animal.x && worldX <= animal.x + animal.width &&
-                worldY >= animal.y && worldY <= animal.y + animal.height
-              ) {
-                if (animal.hurtTime <= 0) {
-                  const hasItem = (state.player.inventory[state.selectedBlock] || 0) > 0;
-                  let damage = BASE_ATTACK_DAMAGE;
-                  if (hasItem) {
-                    damage = WEAPON_DAMAGE[state.selectedBlock] ?? BASE_ATTACK_DAMAGE;
-                    if (POISON_WEAPONS.has(state.selectedBlock)) {
-                      animal.poisonTimer = 300; // 5 seconds of poison
-                      animal.poisonTick = 60;
-                    }
-                  }
-
-                  // Durability logic
-                  if (hasItem && MAX_DURABILITY[state.selectedBlock] !== undefined) {
-                    state.player.durability[state.selectedBlock]--;
-                    if (state.player.durability[state.selectedBlock] <= 0) {
-                      state.player.inventory[state.selectedBlock]--;
-                      if (state.player.inventory[state.selectedBlock] > 0) {
-                        state.player.durability[state.selectedBlock] = MAX_DURABILITY[state.selectedBlock];
-                      } else {
-                        state.player.durability[state.selectedBlock] = 0;
-                      }
-                    }
-                    state.invChanged = true;
-                  }
-
-                  if (animal.type === AnimalType.COCOA_CAT) {
-                    const hasFullCocoaArmor = state.player.inventory[BlockType.COCOA_HELMET] > 0 &&
-                                              state.player.inventory[BlockType.COCOA_CHESTPLATE] > 0 &&
-                                              state.player.inventory[BlockType.COCOA_LEGGINGS] > 0 &&
-                                              state.player.inventory[BlockType.COCOA_BOOTS] > 0;
-                    if (!hasFullCocoaArmor || state.player.isFlying) {
-                      state.player.health = 0;
-                      if (hasItem && (
-                        state.selectedBlock === BlockType.WOODEN_SWORD ||
-                        state.selectedBlock === BlockType.FANG_LANCE ||
-                        state.selectedBlock === BlockType.WOODEN_PICKAXE ||
-                        state.selectedBlock === BlockType.STONE_PICKAXE ||
-                        state.selectedBlock === BlockType.IRON_PICKAXE ||
-                        state.selectedBlock === BlockType.GOLD_PICKAXE ||
-                        state.selectedBlock === BlockType.DIAMOND_PICKAXE
-                      )) {
-                        state.player.inventory[state.selectedBlock]--;
-                        if (state.player.inventory[state.selectedBlock] <= 0) {
-                          state.player.inventory[state.selectedBlock] = 0;
-                          state.player.durability[state.selectedBlock] = 0;
-                        }
-                        state.invChanged = true;
-                      }
-                    }
-                  }
-
-                  animal.health -= damage;
-                  soundEngine.animalSound(animal.type, {
-                    priority: 'normal',
-                    source: {
-                      x: animal.x + animal.width / 2,
-                      y: animal.y + animal.height / 2,
-                    },
-                    listener: {
-                      x: playerCenterX,
-                      y: playerCenterY,
-                    },
-                    maxDistance: 1400,
-                  });
-                  animal.hurtTime = 10;
-                  animal.aggro = true;
-                  animal.vy = -3; // Knockback up
-                  animal.vx = (animal.x + animal.width / 2 > playerCenterX ? 1 : -1) * 3; // Knockback away
-                  
-                  // If we hit a snake, alert nearby snakes
-                  if (animal.type === AnimalType.SNAKE || animal.type === AnimalType.STRIPED_SNAKE || animal.type === AnimalType.TIGER_SNAKE) {
-                    for (const other of state.animals) {
-                      if (other !== animal && (other.type === AnimalType.SNAKE || other.type === AnimalType.STRIPED_SNAKE || other.type === AnimalType.TIGER_SNAKE)) {
-                        const distToOther = Math.hypot(other.x - animal.x, other.y - animal.y);
-                        if (distToOther < 400) { // Alert radius
-                          other.aggro = true;
-                        }
-                      }
-                    }
-                  }
-
-                  // Stop mining if we hit an animal
-                  state.mining.progress = 0;
-                  return;
-                }
-              }
-            }
-          }
-        }
-      }
+    const interactSetters = {
+      setFurnaceUI,
+      setOpenFurnaceId,
+      setIsInventoryOpen: (value: boolean) => setIsInventoryOpen(value),
     };
+    const handleInteract = (button: number) =>
+      _handleInteract(button, state, isIntersecting, interactSetters);
 
 
     const update = () => {
