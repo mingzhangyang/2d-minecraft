@@ -1,24 +1,14 @@
-import { TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { isNonCollidingBlock, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
-import type { UpdateRect } from './updateContext';
+import type { CollisionChecker, UpdateRect } from './updateContext';
 
 type World = { [x: number]: { [y: number]: BlockType } };
 
-/** Returns true if `block` passes through without physical collision. */
-export const isNonCollidingBlockType = (block: BlockType): boolean => {
-  switch (block) {
-    case BlockType.AIR:
-    case BlockType.TALL_GRASS:
-    case BlockType.FLOWER_BUD:
-    case BlockType.FLOWER_BLOOM:
-    case BlockType.WATER:
-    case BlockType.CACTUS:
-    case BlockType.MAGMA:
-    case BlockType.COCOA_PORTAL:
-      return true;
-    default:
-      return false;
-  }
+/** A moveable rectangular body — the minimum interface needed by resolveX / resolveY. */
+export type PhysicsBody = {
+  x: number; y: number;
+  vx: number; vy: number;
+  width: number; height: number;
 };
 
 /**
@@ -43,7 +33,7 @@ export const checkCollisionAgainstWorld = (
     for (let y = startY; y <= endY; y++) {
       if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
         const block = world[x][y];
-        if (!isNonCollidingBlockType(block)) {
+        if (!isNonCollidingBlock(block)) {
           if (
             animalType === AnimalType.TIGER_SNAKE &&
             (block === BlockType.DIRT || block === BlockType.GRASS)
@@ -58,4 +48,44 @@ export const checkCollisionAgainstWorld = (
     }
   }
   return false;
+};
+
+/**
+ * Moves `body.x` by `body.vx`, then snaps it out of any wall it entered.
+ * Returns true when a horizontal collision was resolved (body hit a wall).
+ */
+export const resolveX = (
+  body: PhysicsBody,
+  checkCollision: CollisionChecker,
+  animalType?: AnimalType,
+): boolean => {
+  body.x += body.vx;
+  if (!checkCollision(body, animalType)) return false;
+  body.x = body.vx > 0
+    ? Math.floor((body.x + body.width) / TILE_SIZE) * TILE_SIZE - body.width - 0.01
+    : Math.floor(body.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
+  body.vx = 0;
+  return true;
+};
+
+/**
+ * Moves `body.y` by `body.vy`, then snaps it out of any floor or ceiling it entered.
+ *
+ * Returns the value of `body.vy` **before** the move when a collision occurred,
+ * or 0 when there was no collision. Callers use the sign to distinguish floor
+ * hits (returned value > 0) from ceiling hits (returned value < 0).
+ */
+export const resolveY = (
+  body: PhysicsBody,
+  checkCollision: CollisionChecker,
+  animalType?: AnimalType,
+): number => {
+  const prevVy = body.vy;
+  body.y += body.vy;
+  if (!checkCollision(body, animalType)) return 0;
+  body.y = prevVy > 0
+    ? Math.floor((body.y + body.height) / TILE_SIZE) * TILE_SIZE - body.height - 0.01
+    : Math.floor(body.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
+  body.vy = 0;
+  return prevVy;
 };

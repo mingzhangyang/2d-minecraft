@@ -65,6 +65,10 @@ export enum BlockType {
   COCOA_FUR = 63,
   GOLD_BLOCK = 64,
   DIAMOND_BLOCK = 65,
+  STONE_SWORD = 66,
+  IRON_SWORD = 67,
+  GOLD_SWORD = 68,
+  DIAMOND_SWORD = 69,
 }
 
 export interface Player {

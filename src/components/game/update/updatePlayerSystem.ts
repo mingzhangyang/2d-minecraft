@@ -14,8 +14,10 @@ import {
 import { getRequiredProgress } from '../crafting';
 import { AnimalType, BlockType } from '../types';
 import type { GameState } from '../runtime';
+import { hasFullCocoaArmor } from '../runtime';
 import type { CollisionChecker } from './updateContext';
 import { getSurfaceY } from '../world';
+import { resolveX, resolveY } from './collisionUtils';
 
 export const updateInventoryOpenPlayer = ({
   state,
@@ -31,17 +33,9 @@ export const updateInventoryOpenPlayer = ({
   }
 
   player.vy += GRAVITY;
-  player.y += player.vy;
   player.grounded = false;
-  if (checkCollision(player)) {
-    if (player.vy > 0) {
-      player.y = Math.floor((player.y + player.height) / TILE_SIZE) * TILE_SIZE - player.height - 0.01;
-      player.grounded = true;
-    } else if (player.vy < 0) {
-      player.y = Math.floor(player.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
-    }
-    player.vy = 0;
-  }
+  const prevVy = resolveY(player, checkCollision);
+  if (prevVy > 0) player.grounded = true;
 
   return true;
 };
@@ -66,7 +60,7 @@ if (state.mouse.rightDown && state.actionCooldown === 0) {
 if (state.mouse.leftDown) {
   const worldX = state.mouse.x + state.camera.x;
   const worldY = state.mouse.y + state.camera.y;
-  
+
   let hoveringAnimal = false;
   for (const animal of state.animals) {
     if (
@@ -90,7 +84,7 @@ if (state.mouse.leftDown) {
       if (state.mining.x === gridX && state.mining.y === gridY) {
         state.mining.progress += 1;
         const type = state.world[gridX][gridY];
-        
+
         const hasItem = (state.player.inventory[state.selectedBlock] || 0) > 0;
         const { requiredProgress, canMine } = getRequiredProgress(type, state.selectedBlock, hasItem, state.player.isFlying);
 
@@ -100,7 +94,7 @@ if (state.mouse.leftDown) {
           soundEngine.mine();
           state.world[gridX][gridY] = BlockType.AIR;
           state.mining.progress = 0;
-          
+
           // Durability logic
           if (hasItem && MAX_DURABILITY[state.selectedBlock] !== undefined) {
             state.player.durability[state.selectedBlock]--;
@@ -118,7 +112,7 @@ if (state.mouse.leftDown) {
           let dropType = type;
           if (type === BlockType.COAL_ORE) dropType = BlockType.COAL;
           if (type === BlockType.DIAMOND_ORE) dropType = BlockType.DIAMOND;
-          
+
           state.droppedItems.push({
             x: gridX * TILE_SIZE + 8,
             y: gridY * TILE_SIZE + 8,
@@ -221,10 +215,10 @@ if (touchingPortal) {
       const throneCenterX = castleStartX + Math.floor(castleWidth / 2);
       const castleY = Math.floor(WORLD_HEIGHT / 2);
       const throneSeatY = castleY - 3;
-      
+
       const spawnX = throneCenterX * TILE_SIZE - 60; // Center the 120px wide cat
       const spawnY = throneSeatY * TILE_SIZE - 120; // Place on top of the seat
-      
+
       state.animals.push({
         x: spawnX,
         y: spawnY,
@@ -260,19 +254,16 @@ if (touchingPortal) {
   }
 }
 
-const hasFullCocoaArmor = player.inventory[BlockType.COCOA_HELMET] > 0 &&
-                          player.inventory[BlockType.COCOA_CHESTPLATE] > 0 &&
-                          player.inventory[BlockType.COCOA_LEGGINGS] > 0 &&
-                          player.inventory[BlockType.COCOA_BOOTS] > 0;
+const fullCocoaArmor = hasFullCocoaArmor(player);
 
-if (touchingCactus && player.hurtTime <= 0 && !player.isFlying && !hasFullCocoaArmor) {
+if (touchingCactus && player.hurtTime <= 0 && !player.isFlying && !fullCocoaArmor) {
   player.health -= 1;
   player.hurtTime = 30;
   player.vy = -3;
   player.vx = (Math.random() > 0.5 ? 1 : -1) * 3;
 }
 
-if (touchingMagma && player.hurtTime <= 0 && !player.isFlying && !hasFullCocoaArmor) {
+if (touchingMagma && player.hurtTime <= 0 && !player.isFlying && !fullCocoaArmor) {
   player.health -= 2; // Magma hurts more than cactus
   player.hurtTime = 30;
   // No knockback so player can swim out
@@ -286,9 +277,6 @@ for (let x = pStartX; x <= pEndX; x++) {
     if (state.world[x][headY] === BlockType.WATER) headInWater = true;
   }
 }
-
-if (player.breath === undefined) player.breath = 600;
-if (player.maxBreath === undefined) player.maxBreath = 600;
 
 if (headInWater && !player.isFlying) {
   player.breath--;
@@ -312,44 +300,23 @@ if (player.isFlying) {
   else if (keys['KeyS'] || keys['ArrowDown']) player.vy = MOVE_SPEED * 2;
   else player.vy = 0;
 
-  player.x += player.vx;
-  if (checkCollision(player)) {
-    if (player.vx > 0) player.x = Math.floor((player.x + player.width) / TILE_SIZE) * TILE_SIZE - player.width - 0.01;
-    else if (player.vx < 0) player.x = Math.floor(player.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
-    player.vx = 0;
-  }
+  resolveX(player, checkCollision);
+  resolveY(player, checkCollision);
 
-  player.y += player.vy;
-  if (checkCollision(player)) {
-    if (player.vy > 0) player.y = Math.floor((player.y + player.height) / TILE_SIZE) * TILE_SIZE - player.height - 0.01;
-    else if (player.vy < 0) player.y = Math.floor(player.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
-    player.vy = 0;
-  }
-  
   player.grounded = false;
   player.fallStartY = undefined;
-  player.health = player.maxHealth; // God mode
+  // Flying is creative/debug mode: restore health so the player doesn't die
+  // from prior damage but don't suppress incoming damage this frame.
+  player.health = player.maxHealth;
 } else {
-  const speedMultiplier = hasFullCocoaArmor ? 1.5 : 1;
-  if (hasFullCocoaArmor) {
-    player.health = player.maxHealth;
-  }
+  const speedMultiplier = fullCocoaArmor ? 1.5 : 1;
 
   // Horizontal movement
   if (keys['KeyA'] || keys['ArrowLeft']) player.vx = -MOVE_SPEED * speedMultiplier * (inWater ? 0.5 : 1);
   else if (keys['KeyD'] || keys['ArrowRight']) player.vx = MOVE_SPEED * speedMultiplier * (inWater ? 0.5 : 1);
   else player.vx = 0;
 
-  // Apply horizontal movement and resolve collisions
-  player.x += player.vx;
-  if (checkCollision(player)) {
-    if (player.vx > 0) {
-      player.x = Math.floor((player.x + player.width) / TILE_SIZE) * TILE_SIZE - player.width - 0.01;
-    } else if (player.vx < 0) {
-      player.x = Math.floor(player.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
-    }
-    player.vx = 0;
-  }
+  resolveX(player, checkCollision);
 
   // Vertical movement (Gravity and Jumping)
   if (inWater) {
@@ -376,27 +343,18 @@ if (player.isFlying) {
     player.fallStartY = undefined;
   }
 
-  // Apply vertical movement and resolve collisions
-  player.y += player.vy;
   player.grounded = false;
-  if (checkCollision(player)) {
-    if (player.vy > 0) {
-      player.y = Math.floor((player.y + player.height) / TILE_SIZE) * TILE_SIZE - player.height - 0.01;
-      player.grounded = true;
-      
-      // Calculate fall damage
-      if (player.fallStartY !== undefined) {
-        const blocksFallen = (player.y - player.fallStartY) / TILE_SIZE;
-        if (blocksFallen > 3 && !hasFullCocoaArmor) {
-          const damage = Math.floor(blocksFallen - 3);
-          player.health -= damage;
-        }
-        player.fallStartY = undefined;
+  const prevVy = resolveY(player, checkCollision);
+  if (prevVy > 0) {
+    // Landed on floor
+    player.grounded = true;
+    if (player.fallStartY !== undefined) {
+      const blocksFallen = (player.y - player.fallStartY) / TILE_SIZE;
+      if (blocksFallen > 3 && !fullCocoaArmor) {
+        player.health -= Math.floor(blocksFallen - 3);
       }
-    } else if (player.vy < 0) {
-      player.y = Math.floor(player.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
+      player.fallStartY = undefined;
     }
-    player.vy = 0;
   }
 }
 
@@ -406,4 +364,5 @@ if (player.exhaustion >= 10) {
   player.exhaustion = 0;
   if (player.hunger > 0) player.hunger -= 1;
 }
+
 };

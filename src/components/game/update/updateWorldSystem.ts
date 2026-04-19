@@ -201,10 +201,10 @@ const loadedMaxX = Math.min(
 // Furnace logic
 for (const [id, f] of Object.entries(state.furnaces)) {
   const furnace = f as FurnaceData;
-  // Check if furnace block still exists
-  const numKey = Number(id);
-  const fx = Math.floor(numKey / WORLD_HEIGHT);
-  const fy = numKey % WORLD_HEIGHT;
+  // Parse the "x,y" key written by playerInteractions.ts
+  const comma = id.indexOf(',');
+  const fx = comma !== -1 ? parseInt(id.slice(0, comma), 10) : NaN;
+  const fy = comma !== -1 ? parseInt(id.slice(comma + 1), 10) : NaN;
   if (isNaN(fx) || isNaN(fy) || fx < 0 || fx >= WORLD_WIDTH || fy < 0 || fy >= WORLD_HEIGHT) {
     delete state.furnaces[id];
     continue;
@@ -340,8 +340,9 @@ if (state.tick % 120 === 0) { // Every 2 seconds
   if (player.hunger >= 9 && player.health < player.maxHealth) {
     player.health += 1;
     player.exhaustion += 5; // Healing costs exhaustion
-  } else if (player.hunger === 0) {
+  } else if (player.hunger === 0 && !player.isFlying) {
     player.health -= 1;
+    player.hurtTime = 20;
   }
 }
 

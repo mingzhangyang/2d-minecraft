@@ -15,7 +15,8 @@ import {
   TILE_SIZE,
 } from '../constants';
 import type { GameState } from '../runtime';
-import { isDecorationBlock } from '../runtime';
+import { hasFullCocoaArmor } from '../runtime';
+import { isDecorationBlock } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { Animal, DroppedItem } from '../types';
 import type { Intersector } from './updateContext';
@@ -155,6 +156,16 @@ export const computeAnimalTarget = (
         }
       }
     } else if (animal.type === AnimalType.SNAKE || animal.type === AnimalType.STRIPED_SNAKE || animal.type === AnimalType.TIGER_SNAKE) {
+      // At night (timeOfDay outside the day window 1800–5400) snakes are more
+      // aggressive: they automatically aggro the player if in vision range.
+      const isNight = state.timeOfDay < 1800 || state.timeOfDay > 5400;
+      if (isNight && !animal.aggro) {
+        const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
+        if (distToPlayer < CAT_VISION_RANGE) {
+          animal.aggro = true;
+        }
+      }
+
       if (animal.aggro) {
         const distToPlayer = Math.hypot(player.x - animal.x, player.y - animal.y);
         if (distToPlayer > ANIMAL_AGGRO_LOSS_DISTANCE) {
@@ -259,16 +270,12 @@ export const applyCocoaCatBehavior = (
 ): void => {
   if (animal.type !== AnimalType.COCOA_CAT) return;
   const { player } = state;
-  const hasFullCocoaArmor =
-    player.inventory[BlockType.COCOA_HELMET] > 0 &&
-    player.inventory[BlockType.COCOA_CHESTPLATE] > 0 &&
-    player.inventory[BlockType.COCOA_LEGGINGS] > 0 &&
-    player.inventory[BlockType.COCOA_BOOTS] > 0;
+  const fullCocoaArmor = hasFullCocoaArmor(player);
 
-  if (isIntersecting(animal, player) && (!hasFullCocoaArmor || player.isFlying)) {
+  if (isIntersecting(animal, player) && (!fullCocoaArmor || player.isFlying)) {
     player.health = 0;
   }
-  if (player.y < COCOA_CAT_HEIGHT_THRESHOLD_TILES * TILE_SIZE && !hasFullCocoaArmor) {
+  if (player.y < COCOA_CAT_HEIGHT_THRESHOLD_TILES * TILE_SIZE && !fullCocoaArmor) {
     intent.targetX = player.x;
     intent.isTargetingPlayer = true;
     if (Math.abs(player.x - animal.x) < COCOA_CAT_ATTACK_RANGE && animal.attackCooldown <= 0) {

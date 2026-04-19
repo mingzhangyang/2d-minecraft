@@ -28,23 +28,36 @@ export const getMaxStack = (type: BlockType): number => {
 // ---------------------------------------------------------------------------
 type Pattern = (BlockType | null)[][];
 
+const tryMatchAt = (
+  types: (BlockType | null)[],
+  pattern: Pattern,
+  rowOff: number,
+  colOff: number,
+  mirror: boolean,
+): boolean => {
+  const GRID = 3;
+  const patRows = pattern.length;
+  const patCols = Math.max(0, ...pattern.map(r => r.length));
+  outer: for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const pr = r - rowOff;
+      const pc = mirror ? patCols - 1 - (c - colOff) : c - colOff;
+      const inPat = pr >= 0 && pr < patRows && pc >= 0 && pc < patCols;
+      const expected = inPat ? (pattern[pr][pc] ?? null) : null;
+      if (types[r * GRID + c] !== expected) { return false; }
+    }
+  }
+  return true;
+};
+
 const matchPattern = (types: (BlockType | null)[], pattern: Pattern): boolean => {
   const GRID = 3;
   const patRows = pattern.length;
   const patCols = Math.max(0, ...pattern.map(r => r.length));
   for (let rowOff = 0; rowOff <= GRID - patRows; rowOff++) {
     for (let colOff = 0; colOff <= GRID - patCols; colOff++) {
-      let match = true;
-      outer: for (let r = 0; r < GRID; r++) {
-        for (let c = 0; c < GRID; c++) {
-          const pr = r - rowOff;
-          const pc = c - colOff;
-          const inPat = pr >= 0 && pr < patRows && pc >= 0 && pc < patCols;
-          const expected = inPat ? pattern[pr][pc] : null;
-          if (types[r * GRID + c] !== expected) { match = false; break outer; }
-        }
-      }
-      if (match) return true;
+      if (tryMatchAt(types, pattern, rowOff, colOff, false)) return true;
+      if (tryMatchAt(types, pattern, rowOff, colOff, true))  return true;
     }
   }
   return false;
@@ -63,6 +76,9 @@ export const checkCrafting = (
   const F  = BlockType.FANG;
   const St = BlockType.STONE;
   const D  = BlockType.DIRT;
+  const I  = BlockType.IRON_INGOT;
+  const G  = BlockType.GOLD_INGOT;
+  const Di = BlockType.DIAMOND;
   const _  = null; // empty slot
 
   // Any log → 4 planks
@@ -93,6 +109,17 @@ export const checkCrafting = (
 
   // 2 dirt (vertical) → grass
   if (matchPattern(types, [[D], [D]])) return { type: BlockType.GRASS, count: 1 };
+
+  // Swords: material-material-stick column
+  const SWORDS: [BlockType, BlockType][] = [
+    [St, BlockType.STONE_SWORD],
+    [I,  BlockType.IRON_SWORD],
+    [G,  BlockType.GOLD_SWORD],
+    [Di, BlockType.DIAMOND_SWORD],
+  ];
+  for (const [mat, result] of SWORDS) {
+    if (matchPattern(types, [[mat], [mat], [S]])) return { type: result, count: 1 };
+  }
 
   // Pickaxes: 3-material top row + 2 sticks down centre
   const PICKAXES: [BlockType, BlockType][] = [

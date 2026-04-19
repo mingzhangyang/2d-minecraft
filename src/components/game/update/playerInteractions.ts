@@ -4,9 +4,12 @@ import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import type { GameState } from '../runtime';
 import {
+  isReplaceableBlock,
+} from '../constants';
+import {
+  hasFullCocoaArmor,
   isCookedMeat,
   isRawMeat,
-  isReplaceableBlock,
   isTamingFood,
 } from '../runtime';
 import type { Intersector } from './updateContext';
@@ -161,12 +164,7 @@ export const handleInteract = (
 
         // Cocoa Cat instant-kills the player unless wearing the full set
         if (animal.type === AnimalType.COCOA_CAT) {
-          const hasFullCocoaArmor =
-            state.player.inventory[BlockType.COCOA_HELMET] > 0 &&
-            state.player.inventory[BlockType.COCOA_CHESTPLATE] > 0 &&
-            state.player.inventory[BlockType.COCOA_LEGGINGS] > 0 &&
-            state.player.inventory[BlockType.COCOA_BOOTS] > 0;
-          if (!hasFullCocoaArmor || state.player.isFlying) {
+          if (!hasFullCocoaArmor(state.player) || state.player.isFlying) {
             state.player.health = 0;
             if (hasItem && (
               state.selectedBlock === BlockType.WOODEN_SWORD ||

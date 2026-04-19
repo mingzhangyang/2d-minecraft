@@ -6,9 +6,7 @@ import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import { drawGame } from '../render/drawGame';
 import type { GameState, Rect } from '../runtime';
-import {
-  isTransparentBlock,
-} from '../runtime';
+import { isTransparentBlock } from '../constants';
 import { checkCollisionAgainstWorld } from '../update/collisionUtils';
 import { updateGame } from '../update/updateGame';
 import { handleInteract as _handleInteract } from '../update/playerInteractions';
@@ -62,6 +60,9 @@ export const useGameLoop = ({
     let lastFpsTime = performance.now();
     let currentFps = 0;
     const state = gameState.current;
+    // Tracked UI state — only push to React when values actually change
+    let prevIsDead = state.isDead;
+    let prevAutoRespawn = state.autoRespawn;
 
     // Try to load a saved game; fall back to spawn-point Y
     const loaded = loadGame(state);
@@ -289,13 +290,15 @@ export const useGameLoop = ({
         state.invChanged = false;
       }
 
-      if (state.isDead) {
-        setIsDead(prev => prev ? prev : true);
-      } else {
-        setIsDead(prev => prev ? false : prev);
+      if (state.isDead !== prevIsDead) {
+        prevIsDead = state.isDead;
+        setIsDead(state.isDead);
       }
 
-      setAutoRespawn(prev => prev !== state.autoRespawn ? state.autoRespawn : prev);
+      if (state.autoRespawn !== prevAutoRespawn) {
+        prevAutoRespawn = state.autoRespawn;
+        setAutoRespawn(state.autoRespawn);
+      }
 
       animationFrameId = requestAnimationFrame(loop);
     };

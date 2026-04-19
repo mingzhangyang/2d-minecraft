@@ -36,6 +36,25 @@ export class SpatialHash<T extends { x: number; y: number; width: number; height
     }
   }
 
+  /** Removes `entity` from all cells it currently occupies. */
+  remove(entity: T) {
+    const x0 = Math.floor(entity.x / this.cellSize);
+    const y0 = Math.floor(entity.y / this.cellSize);
+    const x1 = Math.floor((entity.x + entity.width) / this.cellSize);
+    const y1 = Math.floor((entity.y + entity.height) / this.cellSize);
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
+        const k = this.key(cx, cy);
+        const bucket = this.cells.get(k);
+        if (bucket) {
+          const idx = bucket.indexOf(entity);
+          if (idx !== -1) bucket.splice(idx, 1);
+          if (bucket.length === 0) this.cells.delete(k);
+        }
+      }
+    }
+  }
+
   /**
    * Returns all entities whose grid cell overlaps the query rectangle.
    * Results may contain duplicates if an entity spans multiple cells.

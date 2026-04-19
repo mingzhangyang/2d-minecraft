@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { isNonCollidingBlock, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
-import { checkCollisionAgainstWorld, isNonCollidingBlockType } from './collisionUtils';
+import { checkCollisionAgainstWorld } from './collisionUtils';
 
 // ---------------------------------------------------------------------------
 // Minimal stub world – sparse 2-D array accessed as world[x][y].
@@ -36,29 +36,29 @@ const tileRect = (tileX: number, tileY: number) => ({
 // isNonCollidingBlockType
 // ---------------------------------------------------------------------------
 
-describe('isNonCollidingBlockType', () => {
+describe('isNonCollidingBlock', () => {
   it('treats AIR as non-colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.AIR)).toBe(true);
+    expect(isNonCollidingBlock(BlockType.AIR)).toBe(true);
   });
 
   it('treats WATER as non-colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.WATER)).toBe(true);
+    expect(isNonCollidingBlock(BlockType.WATER)).toBe(true);
   });
 
   it('treats TALL_GRASS as non-colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.TALL_GRASS)).toBe(true);
+    expect(isNonCollidingBlock(BlockType.TALL_GRASS)).toBe(true);
   });
 
   it('treats MAGMA as non-colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.MAGMA)).toBe(true);
+    expect(isNonCollidingBlock(BlockType.MAGMA)).toBe(true);
   });
 
   it('treats DIRT as colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.DIRT)).toBe(false);
+    expect(isNonCollidingBlock(BlockType.DIRT)).toBe(false);
   });
 
   it('treats STONE as colliding', () => {
-    expect(isNonCollidingBlockType(BlockType.STONE)).toBe(false);
+    expect(isNonCollidingBlock(BlockType.STONE)).toBe(false);
   });
 });
 

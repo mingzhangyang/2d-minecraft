@@ -1,5 +1,54 @@
 import { BlockType } from './types';
 
+// ---------------------------------------------------------------------------
+// Block classification predicates
+// These are pure, static lookup functions and belong here rather than in
+// runtime.ts, which owns GameState shape and initial-value factories.
+// ---------------------------------------------------------------------------
+
+export const DECORATION_BLOCKS = new Set<BlockType>([
+  BlockType.TALL_GRASS,
+  BlockType.FLOWER_BUD,
+  BlockType.FLOWER_BLOOM,
+]);
+
+export const TRANSPARENT_BLOCKS = new Set<BlockType>([BlockType.AIR, ...DECORATION_BLOCKS]);
+
+export const NON_COLLIDING_BLOCKS = new Set<BlockType>([
+  BlockType.AIR,
+  BlockType.TALL_GRASS,
+  BlockType.FLOWER_BUD,
+  BlockType.FLOWER_BLOOM,
+  BlockType.WATER,
+  BlockType.CACTUS,
+  BlockType.MAGMA,
+  BlockType.COCOA_PORTAL,
+]);
+
+export const REPLACEABLE_BLOCKS = new Set<BlockType>([
+  BlockType.AIR,
+  BlockType.TALL_GRASS,
+  BlockType.FLOWER_BUD,
+  BlockType.FLOWER_BLOOM,
+  BlockType.WATER,
+  BlockType.MAGMA,
+]);
+
+export const TREE_BLOCKS = new Set<BlockType>([
+  BlockType.WOOD,
+  BlockType.PINE_WOOD,
+  BlockType.PALM_WOOD,
+  BlockType.LEAVES,
+  BlockType.PINE_LEAVES,
+  BlockType.PALM_LEAVES,
+]);
+
+export const isDecorationBlock  = (b: BlockType): boolean => DECORATION_BLOCKS.has(b);
+export const isTransparentBlock = (b: BlockType): boolean => TRANSPARENT_BLOCKS.has(b);
+export const isNonCollidingBlock = (b: BlockType): boolean => NON_COLLIDING_BLOCKS.has(b);
+export const isReplaceableBlock = (b: BlockType): boolean => REPLACEABLE_BLOCKS.has(b);
+export const isTreeBlock        = (b: BlockType): boolean => TREE_BLOCKS.has(b);
+
 export const TILE_SIZE = 32;
 export const WORLD_WIDTH = 100000;
 export const WORLD_HEIGHT = 64;
@@ -82,6 +131,10 @@ export const BLOCK_COLORS: Record<BlockType, string> = {
   [BlockType.COCOA_FUR]: '#4a3118',
   [BlockType.GOLD_BLOCK]: '#FBC02D',
   [BlockType.DIAMOND_BLOCK]: '#18FFFF',
+  [BlockType.STONE_SWORD]: 'transparent',
+  [BlockType.IRON_SWORD]: 'transparent',
+  [BlockType.GOLD_SWORD]: 'transparent',
+  [BlockType.DIAMOND_SWORD]: 'transparent',
 };
 
 export const INVENTORY_BLOCKS = [
@@ -142,6 +195,10 @@ export const INVENTORY_BLOCKS = [
   BlockType.OBSIDIAN,
   BlockType.SNOW_DIRT,
   BlockType.SNOW_GRASS,
+  BlockType.STONE_SWORD,
+  BlockType.IRON_SWORD,
+  BlockType.GOLD_SWORD,
+  BlockType.DIAMOND_SWORD,
 ];
 
 export const MAX_DURABILITY: Record<number, number> = {
@@ -151,6 +208,10 @@ export const MAX_DURABILITY: Record<number, number> = {
   [BlockType.GOLD_PICKAXE]: 33,
   [BlockType.DIAMOND_PICKAXE]: 1562,
   [BlockType.WOODEN_SWORD]: 60,
+  [BlockType.STONE_SWORD]: 132,
+  [BlockType.IRON_SWORD]: 251,
+  [BlockType.GOLD_SWORD]: 33,
+  [BlockType.DIAMOND_SWORD]: 1562,
   [BlockType.FANG_LANCE]: 132,
 };
 
@@ -161,6 +222,10 @@ export const BASE_ATTACK_DAMAGE = 2;
 export const WEAPON_DAMAGE: Partial<Record<BlockType, number>> = {
   [BlockType.FANG]: 4,
   [BlockType.WOODEN_SWORD]: 5,
+  [BlockType.STONE_SWORD]: 6,
+  [BlockType.IRON_SWORD]: 7,
+  [BlockType.GOLD_SWORD]: 6,
+  [BlockType.DIAMOND_SWORD]: 9,
   [BlockType.FANG_LANCE]: 7,
   [BlockType.WOODEN_PICKAXE]: 3,
   [BlockType.STONE_PICKAXE]: 4,

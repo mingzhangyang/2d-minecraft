@@ -1,11 +1,12 @@
 import { BIRD_MIN_HEIGHT_ABOVE_SURFACE, CAT_JUMP_VELOCITY, GRAVITY, JUMP_FORCE, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import type { GameState } from '../runtime';
-import { isTreeBlock } from '../runtime';
+import { isTreeBlock } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { Animal } from '../types';
 import type { CollisionChecker } from './updateContext';
 import type { AnimalIntent } from './animalBehavior';
 import { getSurfaceY } from '../world';
+import { resolveX, resolveY } from './collisionUtils';
 
 type SfxPlayer = (animal: Animal, priority?: 'ambient' | 'normal') => void;
 
@@ -97,23 +98,17 @@ export const applyAnimalPhysics = (
   }
 
   // --- Horizontal movement + collision ---
-  if (
-    (animal.type === AnimalType.FISH || animal.type === AnimalType.ORCA ||
-     animal.type === AnimalType.DOLPHIN || animal.type === AnimalType.SHARK) &&
-    !inWater
-  ) {
+  const isSea =
+    animal.type === AnimalType.FISH || animal.type === AnimalType.ORCA ||
+    animal.type === AnimalType.DOLPHIN || animal.type === AnimalType.SHARK;
+
+  if (isSea && !inWater) {
     animal.vx = 0; // Sea animals can't move horizontally out of water
+    // Still check for overlap from vertical displacement and zero vx if so
+    if (checkCollision(animal, animal.type)) animal.vx = 0;
   } else {
-    animal.x += animal.vx;
-  }
-  if (checkCollision(animal, animal.type)) {
-    if (animal.vx > 0) {
-      animal.x = Math.floor((animal.x + animal.width) / TILE_SIZE) * TILE_SIZE - animal.width - 0.01;
-    } else if (animal.vx < 0) {
-      animal.x = Math.floor(animal.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
-    }
-    animal.vx = 0;
-    if (animal.state !== 'launching') {
+    const hitWall = resolveX(animal, checkCollision, animal.type);
+    if (hitWall && animal.state !== 'launching') {
       const isCat =
         animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR || animal.type === AnimalType.BLACK_JAGUAR;
       if (isCat && targetX !== null && animal.vy === GRAVITY) {
@@ -135,35 +130,26 @@ export const applyAnimalPhysics = (
   }
 
   // --- Vertical movement + collision ---
-  animal.y += animal.vy;
-  if (checkCollision(animal, animal.type)) {
-    if (animal.vy > 0) {
-      animal.y = Math.floor((animal.y + animal.height) / TILE_SIZE) * TILE_SIZE - animal.height - 0.01;
-
-      if (animal.fallStartY !== undefined) {
-        const blocksFallen = (animal.y - animal.fallStartY) / TILE_SIZE;
-        const isCat =
-          animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR ||
-          animal.type === AnimalType.BLACK_JAGUAR || animal.type === AnimalType.COCOA_CAT;
-        const isBird = animal.type === AnimalType.BIRD;
-        const isFish =
-          animal.type === AnimalType.FISH || animal.type === AnimalType.ORCA ||
-          animal.type === AnimalType.DOLPHIN || animal.type === AnimalType.SHARK;
-        if (blocksFallen > 3 && !isCat && !isBird && !isFish) {
-          animal.health -= Math.floor(blocksFallen - 3);
-          animal.hurtTime = 10;
-          playAnimalSfx(animal, 'normal');
-        }
-        animal.fallStartY = undefined;
+  const prevVy = resolveY(animal, checkCollision, animal.type);
+  if (prevVy > 0) {
+    // Landed on floor
+    if (animal.fallStartY !== undefined) {
+      const blocksFallen = (animal.y - animal.fallStartY) / TILE_SIZE;
+      const isCat =
+        animal.type === AnimalType.LEOPARD || animal.type === AnimalType.JAGUAR ||
+        animal.type === AnimalType.BLACK_JAGUAR || animal.type === AnimalType.COCOA_CAT;
+      const isBird = animal.type === AnimalType.BIRD;
+      const isFish = isSea;
+      if (blocksFallen > 3 && !isCat && !isBird && !isFish) {
+        animal.health -= Math.floor(blocksFallen - 3);
+        animal.hurtTime = 10;
+        playAnimalSfx(animal, 'normal');
       }
-
-      if (animal.state === 'launching') {
-        animal.state = 'idle';
-        animal.stateTime = 30;
-      }
-    } else if (animal.vy < 0) {
-      animal.y = Math.floor(animal.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE + 0.01;
+      animal.fallStartY = undefined;
     }
-    animal.vy = 0;
+    if (animal.state === 'launching') {
+      animal.state = 'idle';
+      animal.stateTime = 30;
+    }
   }
 };

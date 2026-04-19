@@ -10,9 +10,7 @@ import {
 } from '../constants';
 import { getMaxStack } from '../crafting';
 import type { GameState } from '../runtime';
-import {
-  isTransparentBlock,
-} from '../runtime';
+import { isTransparentBlock } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { Animal } from '../types';
 import type { CollisionChecker, Intersector } from './updateContext';
@@ -29,8 +27,10 @@ import {
 import { applyAnimalPhysics } from './animalPhysics';
 import { applyAnimalCombat } from './animalCombat';
 
-// Module-level spatial hash, rebuilt each frame in updateAnimals
+// Module-level spatial hash maintained incrementally (insert on spawn, remove on death/despawn,
+// remove-then-reinsert around physics each frame). Seeded with initial animals on first call.
 const animalGrid = new SpatialHash<Animal>();
+let animalGridSeeded = false;
 
 export const updateDroppedItems = ({
   state,
@@ -246,7 +246,7 @@ if (state.tick % 60 === 0) { // Check every second
           const numToSpawn = (typeToSpawn === AnimalType.SNAKE || typeToSpawn === AnimalType.STRIPED_SNAKE || typeToSpawn === AnimalType.TIGER_SNAKE) ? Math.floor(Math.random() * 3) + 1 : 1;
 
           for (let j = 0; j < numToSpawn; j++) {
-            state.animals.push({
+            const newAnimal: Animal = {
               id: nextId(),
               type: typeToSpawn,
               x: (spawnX + (Math.random() - 0.5) * 2) * TILE_SIZE,
@@ -271,7 +271,9 @@ if (state.tick % 60 === 0) { // Check every second
               attackTimer: 0,
               attackPattern: spawnDef.attackPattern,
               chargeTimer: 0,
-            });
+            };
+            state.animals.push(newAnimal);
+            animalGrid.insert(newAnimal);
           }
         }
       }
@@ -304,7 +306,7 @@ const handleAnimalDeath = (animal: Animal, state: GameState): void => {
       vx: (Math.random() - 0.5) * 4,
       vy: -4,
       type: isSnake || isCat ? BlockType.FANG : BlockType.MEAT,
-      id: Math.random(),
+      id: nextId(),
     });
     if (isCat) {
       state.droppedItems.push({
@@ -340,24 +342,32 @@ export const updateAnimals = ({
     });
   };
 
-  // Rebuild spatial hash each frame for O(1) neighbor lookups
-  animalGrid.clear();
-  for (const a of state.animals) animalGrid.insert(a);
+  // Seed the hash with existing animals on the very first call (covers initial world spawn)
+  if (!animalGridSeeded) {
+    for (const a of state.animals) animalGrid.insert(a);
+    animalGridSeeded = true;
+  }
 
   // Pre-filter food items once per frame so herbivores/ants don't scan all dropped items
   const foodItems = state.droppedItems.filter(
     item => item.type === BlockType.APPLE || item.type === BlockType.WORM,
   );
 
+  // Maintain the spatial hash incrementally:
+  // - Remove before physics so the entry is at the old position during behavior queries.
+  // - Reinsert after physics so combat queries see the new position.
+  // Spliced (dead/despawned) animals are removed before splice to stay consistent.
   for (let i = state.animals.length - 1; i >= 0; i--) {
     const animal = state.animals[i];
 
     if (Math.abs(animal.x - player.x) > ANIMAL_DESPAWN_DISTANCE) {
+      animalGrid.remove(animal);
       state.animals.splice(i, 1);
       continue;
     }
 
     if (animal.health <= 0) {
+      animalGrid.remove(animal);
       handleAnimalDeath(animal, state);
       state.animals.splice(i, 1);
       continue;
@@ -419,7 +429,9 @@ export const updateAnimals = ({
     applyMovementState(animal, intent);
     applyCocoaCatBehavior(animal, state, intent, isIntersecting);
     applyMovementSpeed(animal, intent);
+    animalGrid.remove(animal);            // remove at old position before move
     applyAnimalPhysics(animal, state, checkCollision, intent, playAnimalSfx);
+    animalGrid.insert(animal);            // reinsert at new position for combat queries
     applyAnimalCombat(animal, state, animalGrid, isIntersecting, playAnimalSfx, intent);
   }
 };

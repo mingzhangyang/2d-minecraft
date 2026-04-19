@@ -59,38 +59,6 @@ export type GameState = {
   mouse: { x: number; y: number; leftDown: boolean; rightDown: boolean };
 };
 
-const DECORATION_BLOCKS = new Set<BlockType>([
-  BlockType.TALL_GRASS,
-  BlockType.FLOWER_BUD,
-  BlockType.FLOWER_BLOOM,
-]);
-const TRANSPARENT_BLOCKS = new Set<BlockType>([BlockType.AIR, ...DECORATION_BLOCKS]);
-const NON_COLLIDING_BLOCKS = new Set<BlockType>([
-  BlockType.AIR,
-  BlockType.TALL_GRASS,
-  BlockType.FLOWER_BUD,
-  BlockType.FLOWER_BLOOM,
-  BlockType.WATER,
-  BlockType.CACTUS,
-  BlockType.MAGMA,
-  BlockType.COCOA_PORTAL,
-]);
-const REPLACEABLE_BLOCKS = new Set<BlockType>([
-  BlockType.AIR,
-  BlockType.TALL_GRASS,
-  BlockType.FLOWER_BUD,
-  BlockType.FLOWER_BLOOM,
-  BlockType.WATER,
-  BlockType.MAGMA,
-]);
-const TREE_BLOCKS = new Set<BlockType>([
-  BlockType.WOOD,
-  BlockType.PINE_WOOD,
-  BlockType.PALM_WOOD,
-  BlockType.LEAVES,
-  BlockType.PINE_LEAVES,
-  BlockType.PALM_LEAVES,
-]);
 const RAW_MEAT_BLOCKS = new Set<BlockType>([
   BlockType.MEAT,
   BlockType.BEEF,
@@ -118,11 +86,6 @@ const TAMEABLE_FOOD_BLOCKS = new Set<BlockType>([
   BlockType.COOKED_FISH_MEAT,
 ]);
 
-export const isDecorationBlock = (block: BlockType) => DECORATION_BLOCKS.has(block);
-export const isTransparentBlock = (block: BlockType) => TRANSPARENT_BLOCKS.has(block);
-export const isNonCollidingBlock = (block: BlockType) => NON_COLLIDING_BLOCKS.has(block);
-export const isReplaceableBlock = (block: BlockType) => REPLACEABLE_BLOCKS.has(block);
-export const isTreeBlock = (block: BlockType) => TREE_BLOCKS.has(block);
 export const isRawMeat = (block: BlockType) => RAW_MEAT_BLOCKS.has(block);
 export const isCookedMeat = (block: BlockType) => COOKED_MEAT_BLOCKS.has(block);
 export const isTamingFood = (block: BlockType) => TAMEABLE_FOOD_BLOCKS.has(block);
@@ -178,6 +141,13 @@ export const createInitialPlayer = (): Player => ({
   inventory: createEmptyInventory(),
   durability: { ...MAX_DURABILITY },
 });
+
+/** Returns true when the player has a full set of Cocoa Cat armour equipped. */
+export const hasFullCocoaArmor = (player: Player): boolean =>
+  (player.inventory[BlockType.COCOA_HELMET]     ?? 0) > 0 &&
+  (player.inventory[BlockType.COCOA_CHESTPLATE] ?? 0) > 0 &&
+  (player.inventory[BlockType.COCOA_LEGGINGS]   ?? 0) > 0 &&
+  (player.inventory[BlockType.COCOA_BOOTS]      ?? 0) > 0;
 
 export const clonePlayer = (player: Player): Player => ({
   ...player,
