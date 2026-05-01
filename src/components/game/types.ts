@@ -69,6 +69,11 @@ export enum BlockType {
   IRON_SWORD = 67,
   GOLD_SWORD = 68,
   DIAMOND_SWORD = 69,
+  COCOA_SWORD = 70,
+  COCOA_AXE = 71,
+  COCOA_HAMMER = 72,
+  COCOA_PICKAXE = 73,
+  COCOA_SPEAR = 74,
 }
 
 export interface Player {

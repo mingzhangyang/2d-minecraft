@@ -83,6 +83,7 @@ describe('checkCrafting – weapons', () => {
   const P = BlockType.PLANKS;
   const S = BlockType.STICK;
   const F = BlockType.FANG;
+  const C = BlockType.COCOA_FUR;
 
   it('crafts a WOODEN_SWORD from planks–planks–stick column', () => {
     expect(checkCrafting(place([[P], [P], [S]]))).toEqual({
@@ -96,6 +97,49 @@ describe('checkCrafting – weapons', () => {
       type: BlockType.FANG_LANCE,
       count: 1,
     });
+  });
+
+  it('crafts a COCOA_SWORD from cocoa fur–cocoa fur–stick column', () => {
+    expect(checkCrafting(place([[C], [C], [S]]))).toEqual({
+      type: BlockType.COCOA_SWORD,
+      count: 1,
+    });
+  });
+
+  it('crafts a COCOA_SPEAR from cocoa fur above two sticks', () => {
+    expect(checkCrafting(place([[C], [S], [S]]))).toEqual({
+      type: BlockType.COCOA_SPEAR,
+      count: 1,
+    });
+  });
+});
+
+describe('checkCrafting – cocoa tools', () => {
+  const C = BlockType.COCOA_FUR;
+  const S = BlockType.STICK;
+
+  it('crafts a COCOA_AXE', () => {
+    expect(checkCrafting(place([
+      [C, C],
+      [C, S],
+      [null, S],
+    ]))).toEqual({ type: BlockType.COCOA_AXE, count: 1 });
+  });
+
+  it('crafts a COCOA_HAMMER', () => {
+    expect(checkCrafting(place([
+      [C, C, C],
+      [null, S, null],
+      [S, S, S],
+    ]))).toEqual({ type: BlockType.COCOA_HAMMER, count: 1 });
+  });
+
+  it('crafts a COCOA_PICKAXE', () => {
+    expect(checkCrafting(place([
+      [C, C, C],
+      [null, S, null],
+      [null, S, null],
+    ]))).toEqual({ type: BlockType.COCOA_PICKAXE, count: 1 });
   });
 });
 
@@ -263,6 +307,15 @@ describe('getRequiredProgress – stone-tier blocks (need pickaxe)', () => {
     // base 300 − tier 5 × 10 = 250
     expect(requiredProgress).toBe(250);
   });
+
+  it('cocoa pickaxe can mine anything instantly', () => {
+    const result = getRequiredProgress(
+      BlockType.OBSIDIAN,
+      BlockType.COCOA_PICKAXE,
+      true,
+    );
+    expect(result).toEqual({ requiredProgress: 0, canMine: true });
+  });
 });
 
 describe('getRequiredProgress – tool bonus clamp', () => {
@@ -293,5 +346,26 @@ describe('getRequiredProgress – no item equipped', () => {
     );
     expect(canMine).toBe(true);
     expect(requiredProgress).toBe(15);
+  });
+});
+
+describe('getRequiredProgress – cocoa axe', () => {
+  it('instant mines tree blocks', () => {
+    const result = getRequiredProgress(
+      BlockType.WOOD,
+      BlockType.COCOA_AXE,
+      true,
+    );
+    expect(result).toEqual({ requiredProgress: 0, canMine: true });
+  });
+
+  it('does not instant mine stone blocks', () => {
+    const result = getRequiredProgress(
+      BlockType.STONE,
+      BlockType.COCOA_AXE,
+      true,
+    );
+    expect(result.canMine).toBe(false);
+    expect(result.requiredProgress).toBe(60);
   });
 });

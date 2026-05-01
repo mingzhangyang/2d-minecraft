@@ -6,12 +6,14 @@ import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import { drawGame } from '../render/drawGame';
 import type { GameState, Rect } from '../runtime';
+import { grantCocoaStarterKit } from '../runtime';
 import { isTransparentBlock } from '../constants';
 import { checkCollisionAgainstWorld } from '../update/collisionUtils';
 import { updateGame } from '../update/updateGame';
 import { handleInteract as _handleInteract } from '../update/playerInteractions';
 import { saveGame, loadGame } from '../persistence';
 import { disposeWorldStreaming } from '../world';
+import { areDebugControlsEnabled, isDebugShortcutModifier } from '../debugShortcuts';
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 type GameStats = { health: number; hunger: number; daysPlayed: number };
@@ -59,6 +61,7 @@ export const useGameLoop = ({
     let fpsFrameCount = 0;
     let lastFpsTime = performance.now();
     let currentFps = 0;
+    const debugControlsEnabled = areDebugControlsEnabled();
     const state = gameState.current;
     // Tracked UI state — only push to React when values actually change
     let prevIsDead = state.isDead;
@@ -75,6 +78,10 @@ export const useGameLoop = ({
         }
       }
     }
+    // Always ensure Cocoa tools are present even when loading older saves.
+    grantCocoaStarterKit(state.player, state.discoveredItems);
+    // Force one initial UI sync so inventory/discovered items are visible immediately.
+    state.invChanged = true;
 
     // Auto-save every 30 seconds
     const autoSaveInterval = setInterval(() => saveGame(state), 30_000);
@@ -87,22 +94,26 @@ export const useGameLoop = ({
       soundEngine.init();
       if (e.repeat) return;
       state.keys[e.code] = true;
-      if (e.key.toLowerCase() === 'd') {
-        state.isDead = true;
-      }
-      if (e.key.toLowerCase() === 'r') {
-        state.autoRespawn = !state.autoRespawn;
-      }
-      if (e.key.toLowerCase() === 'f') {
-        state.player.isFlying = !state.player.isFlying;
-        if (state.player.isFlying) {
-          state.player.health = Math.max(1, state.player.health - 2);
-        }
 
-        if (state.selectedBlock === BlockType.DIRT) {
-          state.player.inventory[BlockType.DIRT] = 0;
-          state.invChanged = true;
-          window.dispatchEvent(new CustomEvent('clearDirt'));
+      if (debugControlsEnabled && isDebugShortcutModifier(e)) {
+        const key = e.key.toLowerCase();
+        if (key === 'd') {
+          state.isDead = true;
+        }
+        if (key === 'r') {
+          state.autoRespawn = !state.autoRespawn;
+        }
+        if (key === 'f') {
+          state.player.isFlying = !state.player.isFlying;
+          if (state.player.isFlying) {
+            state.player.health = Math.max(1, state.player.health - 2);
+          }
+
+          if (state.selectedBlock === BlockType.DIRT) {
+            state.player.inventory[BlockType.DIRT] = 0;
+            state.invChanged = true;
+            window.dispatchEvent(new CustomEvent('clearDirt'));
+          }
         }
       }
       if (e.key.toLowerCase() === 'c') {
@@ -111,7 +122,7 @@ export const useGameLoop = ({
       if (e.key.toLowerCase() === 'h') {
         setShowHotbar(prev => !prev);
       }
-      if (e.code === 'Backquote') {
+      if (debugControlsEnabled && e.code === 'Backquote') {
         showDebug = !showDebug;
       }
       if (e.code === 'KeyI' || e.code === 'KeyE' || e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'e') {
@@ -219,7 +230,11 @@ export const useGameLoop = ({
     };
     const loop = () => {
       frameCount++;
-      const isSlowMo = state.keys['KeyV'];
+      const isSlowMo =
+        debugControlsEnabled &&
+        state.keys['KeyV'] &&
+        (state.keys['AltLeft'] || state.keys['AltRight']) &&
+        (state.keys['ShiftLeft'] || state.keys['ShiftRight']);
       
       // Update at full speed normally, or 1/4 speed if holding V
       if (!isSlowMo || frameCount % 4 === 0) {

@@ -309,6 +309,69 @@ export const drawBlock = (
     return;
   }
 
+  if (type === BlockType.COCOA_SWORD) {
+    ctx.fillStyle = '#4a3118';
+    ctx.fillRect(x + size * 0.37, y + size * 0.07, size * 0.26, size * 0.6);
+    ctx.fillStyle = '#7a5530';
+    ctx.fillRect(x + size * 0.41, y + size * 0.09, size * 0.18, size * 0.56);
+    ctx.fillStyle = '#a67c52';
+    ctx.fillRect(x + size * 0.45, y + size * 0.13, size * 0.1, size * 0.46);
+    ctx.fillStyle = '#3f2814';
+    ctx.fillRect(x + size * 0.2, y + size * 0.62, size * 0.6, size * 0.14);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(x + size * 0.24, y + size * 0.65, size * 0.52, size * 0.08);
+    ctx.fillStyle = '#5d3c1f';
+    ctx.fillRect(x + size * 0.43, y + size * 0.76, size * 0.14, size * 0.2);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(x + size * 0.46, y + size * 0.79, size * 0.08, size * 0.14);
+    ctx.fillStyle = '#2d1b0e';
+    ctx.fillRect(x + size * 0.45, y + size * 0.93, size * 0.1, size * 0.05);
+    return;
+  }
+
+  if (type === BlockType.COCOA_AXE) {
+    ctx.fillStyle = '#4a3118';
+    ctx.fillRect(x + size * 0.45, y + size * 0.18, size * 0.1, size * 0.77);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(x + size * 0.47, y + size * 0.2, size * 0.06, size * 0.73);
+    ctx.fillStyle = '#2d1b0e';
+    ctx.fillRect(x + size * 0.46, y + size * 0.34, size * 0.08, size * 0.03);
+    ctx.fillRect(x + size * 0.46, y + size * 0.56, size * 0.08, size * 0.03);
+    ctx.fillStyle = '#5a3920';
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.54, y + size * 0.17);
+    ctx.lineTo(x + size * 0.14, y + size * 0.25);
+    ctx.lineTo(x + size * 0.14, y + size * 0.47);
+    ctx.lineTo(x + size * 0.54, y + size * 0.39);
+    ctx.fill();
+    ctx.fillStyle = '#8f6840';
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.5, y + size * 0.21);
+    ctx.lineTo(x + size * 0.21, y + size * 0.28);
+    ctx.lineTo(x + size * 0.21, y + size * 0.42);
+    ctx.lineTo(x + size * 0.5, y + size * 0.36);
+    ctx.fill();
+    return;
+  }
+
+  if (type === BlockType.COCOA_HAMMER) {
+    ctx.fillStyle = '#4a3118';
+    ctx.fillRect(x + size * 0.45, y + size * 0.22, size * 0.1, size * 0.74);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(x + size * 0.47, y + size * 0.24, size * 0.06, size * 0.7);
+    ctx.fillStyle = '#2d1b0e';
+    ctx.fillRect(x + size * 0.46, y + size * 0.37, size * 0.08, size * 0.03);
+    ctx.fillRect(x + size * 0.46, y + size * 0.63, size * 0.08, size * 0.03);
+    ctx.fillStyle = '#5a3920';
+    ctx.fillRect(x + size * 0.18, y + size * 0.08, size * 0.64, size * 0.24);
+    ctx.fillStyle = '#8f6840';
+    ctx.fillRect(x + size * 0.22, y + size * 0.12, size * 0.56, size * 0.16);
+    ctx.fillStyle = '#3b2412';
+    ctx.fillRect(x + size * 0.18, y + size * 0.14, size * 0.06, size * 0.12);
+    ctx.fillRect(x + size * 0.76, y + size * 0.14, size * 0.06, size * 0.12);
+    return;
+  }
+
   if (type === BlockType.FANG_LANCE) {
     // Stick
     ctx.strokeStyle = '#8B5A2B';
@@ -382,6 +445,40 @@ export const drawBlock = (
     ctx.fill();
     return;
   }
+  if (type === BlockType.COCOA_PICKAXE) {
+    ctx.save();
+    ctx.translate(x + size / 2, y + size / 2);
+    ctx.rotate(Math.PI / 4);
+
+    ctx.fillStyle = '#4a3118';
+    ctx.fillRect(-size * 0.05, -size * 0.1, size * 0.1, size * 0.5);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(-size * 0.03, -size * 0.08, size * 0.06, size * 0.46);
+
+    ctx.fillStyle = '#5a3920';
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.43, -size * 0.08);
+    ctx.lineTo(0, -size * 0.33);
+    ctx.lineTo(size * 0.43, -size * 0.08);
+    ctx.lineTo(size * 0.3, 0.02 * size);
+    ctx.lineTo(0, -size * 0.08);
+    ctx.lineTo(-size * 0.3, 0.02 * size);
+    ctx.fill();
+
+    ctx.fillStyle = '#906a40';
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.33, -size * 0.08);
+    ctx.lineTo(0, -size * 0.27);
+    ctx.lineTo(size * 0.33, -size * 0.08);
+    ctx.lineTo(size * 0.24, -size * 0.02);
+    ctx.lineTo(0, -size * 0.11);
+    ctx.lineTo(-size * 0.24, -size * 0.02);
+    ctx.fill();
+
+    ctx.restore();
+    return;
+  }
+
   if (
     type === BlockType.WOODEN_PICKAXE ||
     type === BlockType.STONE_PICKAXE ||
@@ -398,7 +495,9 @@ export const drawBlock = (
             ? '#E6C280'
             : type === BlockType.GOLD_PICKAXE
               ? '#FFD700'
-              : '#00E5FF';
+              : type === BlockType.DIAMOND_PICKAXE
+                ? '#00E5FF'
+                : '#8b5a2b';
     ctx.save();
     ctx.translate(x + size / 2, y + size / 2);
     ctx.rotate(Math.PI / 4);
@@ -419,6 +518,35 @@ export const drawBlock = (
     ctx.fill();
 
     ctx.restore();
+    return;
+  }
+
+  if (type === BlockType.COCOA_SPEAR) {
+    ctx.strokeStyle = '#4a3118';
+    ctx.lineWidth = size * 0.14;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.5, y + size * 0.95);
+    ctx.lineTo(x + size * 0.5, y + size * 0.25);
+    ctx.stroke();
+    ctx.strokeStyle = '#8b5a2b';
+    ctx.lineWidth = size * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.5, y + size * 0.9);
+    ctx.lineTo(x + size * 0.5, y + size * 0.27);
+    ctx.stroke();
+    ctx.fillStyle = '#5a3920';
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.28, y + size * 0.26);
+    ctx.lineTo(x + size * 0.5, y + size * 0.02);
+    ctx.lineTo(x + size * 0.72, y + size * 0.26);
+    ctx.fill();
+    ctx.fillStyle = '#a67c52';
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.38, y + size * 0.24);
+    ctx.lineTo(x + size * 0.5, y + size * 0.08);
+    ctx.lineTo(x + size * 0.62, y + size * 0.24);
+    ctx.fill();
     return;
   }
 
@@ -624,6 +752,41 @@ export const BlockIcon = ({
       </div>
     );
   }
+  if (type === BlockType.COCOA_SWORD) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-transparent`}>
+        <div className="w-[68%] h-[3px] bg-[#4a3118] transform -rotate-45 relative">
+          <div className="absolute inset-y-0 left-[20%] w-[58%] bg-[#8f6840]" />
+          <div className="absolute w-4 h-[3px] bg-[#5d3c1f] left-[14%] top-0 transform rotate-90" />
+          <div className="absolute w-3 h-[2px] bg-[#2d1b0e] right-0 top-[0.5px] rounded-sm" />
+        </div>
+      </div>
+    );
+  }
+  if (type === BlockType.COCOA_AXE) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-transparent`}>
+        <div className="w-[70%] h-[70%] relative rotate-45">
+          <div className="absolute left-1/2 top-1/4 bottom-0 w-[14%] -translate-x-1/2 bg-[#4a3118] rounded-sm" />
+          <div className="absolute left-1/2 top-[26%] bottom-[4%] w-[8%] -translate-x-1/2 bg-[#8b5a2b] rounded-sm" />
+          <div className="absolute left-[8%] top-[12%] w-[52%] h-[36%] bg-[#5a3920] rounded-sm" />
+          <div className="absolute left-[14%] top-[18%] w-[40%] h-[22%] bg-[#8f6840] rounded-sm" />
+        </div>
+      </div>
+    );
+  }
+  if (type === BlockType.COCOA_HAMMER) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-transparent`}>
+        <div className="w-[70%] h-[70%] relative rotate-45">
+          <div className="absolute left-1/2 top-[28%] bottom-0 w-[14%] -translate-x-1/2 bg-[#4a3118] rounded-sm" />
+          <div className="absolute left-1/2 top-[30%] bottom-[3%] w-[8%] -translate-x-1/2 bg-[#8b5a2b] rounded-sm" />
+          <div className="absolute left-[16%] top-[8%] w-[68%] h-[26%] bg-[#5a3920] rounded-sm" />
+          <div className="absolute left-[22%] top-[13%] w-[56%] h-[14%] bg-[#8f6840] rounded-sm" />
+        </div>
+      </div>
+    );
+  }
   if (type === BlockType.FANG_LANCE) {
     return (
       <div className={`${className} flex items-center justify-center bg-transparent`}>
@@ -684,6 +847,19 @@ export const BlockIcon = ({
       </div>
     );
   }
+  if (type === BlockType.COCOA_PICKAXE) {
+    return (
+      <div className={`${className} flex items-center justify-center`}>
+        <div className="w-[80%] h-[80%] relative rotate-45">
+          <div className="absolute left-1/2 top-1/4 bottom-0 w-[15%] -translate-x-1/2 bg-[#4a3118] rounded-sm" />
+          <div className="absolute left-1/2 top-[28%] bottom-[4%] w-[9%] -translate-x-1/2 bg-[#8b5a2b] rounded-sm" />
+          <div className="absolute top-0 left-0 right-0 h-[30%] rounded-sm bg-[#5a3920]" style={{ clipPath: 'polygon(0% 100%, 50% 0%, 100% 100%, 80% 100%, 50% 40%, 20% 100%)' }} />
+          <div className="absolute top-[4%] left-[12%] right-[12%] h-[18%] rounded-sm bg-[#8f6840]" style={{ clipPath: 'polygon(0% 100%, 50% 0%, 100% 100%, 78% 100%, 50% 46%, 22% 100%)' }} />
+        </div>
+      </div>
+    );
+  }
+
   if (
     type === BlockType.WOODEN_PICKAXE ||
     type === BlockType.STONE_PICKAXE ||
@@ -700,7 +876,9 @@ export const BlockIcon = ({
             ? '#E6C280'
             : type === BlockType.GOLD_PICKAXE
               ? '#FFD700'
-              : '#00E5FF';
+              : type === BlockType.DIAMOND_PICKAXE
+                ? '#00E5FF'
+                : '#8b5a2b';
     return (
       <div className={`${className} flex items-center justify-center`}>
         <div className="w-[80%] h-[80%] relative rotate-45">
@@ -708,6 +886,17 @@ export const BlockIcon = ({
           <div className="absolute left-1/2 top-1/4 bottom-0 w-[15%] -translate-x-1/2 bg-[#8B5A2B] rounded-sm" />
           {/* Head */}
           <div className="absolute top-0 left-0 right-0 h-[30%] rounded-sm" style={{ backgroundColor: color, clipPath: 'polygon(0% 100%, 50% 0%, 100% 100%, 80% 100%, 50% 40%, 20% 100%)' }} />
+        </div>
+      </div>
+    );
+  }
+  if (type === BlockType.COCOA_SPEAR) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-transparent`}>
+        <div className="w-[82%] h-[3px] bg-[#4a3118] transform -rotate-45 relative">
+          <div className="absolute inset-y-0 left-[8%] right-[12%] bg-[#8b5a2b]" />
+          <div className="absolute w-4 h-4 bg-[#5a3920] right-[-4px] top-[-8px] transform rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }} />
+          <div className="absolute w-2 h-2 bg-[#a67c52] right-[1px] top-[-2px] transform rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }} />
         </div>
       </div>
     );

@@ -1,4 +1,4 @@
-import { REACH, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { getToolReach, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { getRequiredProgress } from '../crafting';
 import { BlockType, Weather } from '../types';
 import type { GameState } from '../runtime';
@@ -44,7 +44,7 @@ const gridY = Math.floor(worldY / TILE_SIZE);
 
 const playerCenterX = state.player.x + state.player.width / 2;
 const playerCenterY = state.player.y + state.player.height / 2;
-const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+const currentReach = getToolReach(state.selectedBlock);
 const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
 if (distSq <= currentReach * currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {

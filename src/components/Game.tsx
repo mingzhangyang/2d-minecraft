@@ -181,9 +181,15 @@ export default function Game() {
     const fresh = createInitialGameState();
     Object.assign(state, fresh);
     setIsDead(false);
-    setInventory(createEmptyInventory());
-    setDiscoveredItems({});
-    setStats({ health: 10, hunger: 10, daysPlayed: 0 });
+    setInventory({ ...fresh.player.inventory });
+    setDurability({ ...fresh.player.durability });
+    setDiscoveredItems({ ...fresh.discoveredItems });
+    setSelectedBlock(fresh.selectedBlock);
+    setStats({
+      health: fresh.player.health,
+      hunger: fresh.player.hunger,
+      daysPlayed: 0,
+    });
 
     if (canvasRef.current) {
       canvasRef.current.focus();

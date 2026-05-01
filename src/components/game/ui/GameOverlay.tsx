@@ -157,25 +157,27 @@ export function GameOverlay({
           <div className="flex gap-12 rounded-lg border-4 border-[#555] bg-[#C6C6C6] p-6 shadow-2xl">
             <div>
               <h2 className="mb-2 text-xl font-bold text-[#373737]">Inventory</h2>
-              <div className="grid grid-cols-4 gap-2">
-                {INVENTORY_BLOCKS.map(block => (
-                  <div
-                    key={block}
-                    className={`${slotClassName} h-16 w-16`}
-                    onMouseDown={event => (discoveredItems[block] ? onInventorySlotMouseDown(event, block) : undefined)}
-                    onContextMenu={event => event.preventDefault()}
-                    onMouseEnter={() => onHoveredSlotChange({ type: 'inventory', block })}
-                    onMouseLeave={() => onHoveredSlotChange(null)}
-                  >
-                    {discoveredItems[block] && (
-                      <StackDisplay
-                        type={block}
-                        count={inventory[block] || 0}
-                        durability={inventory[block] > 0 ? durability[block] : undefined}
-                      />
-                    )}
-                  </div>
-                ))}
+              <div className="max-h-[70vh] overflow-y-auto pr-1 overscroll-contain">
+                <div className="grid grid-cols-4 gap-2">
+                  {INVENTORY_BLOCKS.map(block => (
+                    <div
+                      key={block}
+                      className={`${slotClassName} h-16 w-16`}
+                      onMouseDown={event => (discoveredItems[block] ? onInventorySlotMouseDown(event, block) : undefined)}
+                      onContextMenu={event => event.preventDefault()}
+                      onMouseEnter={() => onHoveredSlotChange({ type: 'inventory', block })}
+                      onMouseLeave={() => onHoveredSlotChange(null)}
+                    >
+                      {discoveredItems[block] && (
+                        <StackDisplay
+                          type={block}
+                          count={inventory[block] || 0}
+                          durability={inventory[block] > 0 ? durability[block] : undefined}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -117,30 +117,59 @@ export const getFuelTicks = (fuelType: BlockType) => {
 export const isValidFurnaceInput = (block: BlockType) => getSmeltResult(block) !== null;
 export const isValidFurnaceFuel = (block: BlockType) => getFuelTicks(block) > 0;
 
-export const createInitialPlayer = (): Player => ({
-  x: SPAWN_X * TILE_SIZE,
-  y: (getSurfaceY(SPAWN_X) - 2) * TILE_SIZE,
-  vx: 0,
-  vy: 0,
-  width: 24,
-  height: 48,
-  grounded: false,
-  health: 10,
-  maxHealth: 10,
-  hunger: 10,
-  maxHunger: 10,
-  exhaustion: 0,
-  fallStartY: undefined,
-  hurtTime: 0,
-  poisonTimer: 0,
-  poisonTick: 0,
-  isFlying: false,
-  breath: 600,
-  maxBreath: 600,
-  attackTimer: 0,
-  inventory: createEmptyInventory(),
-  durability: { ...MAX_DURABILITY },
-});
+export const COCOA_TOOL_BLOCKS: BlockType[] = [
+  BlockType.COCOA_SWORD,
+  BlockType.COCOA_AXE,
+  BlockType.COCOA_HAMMER,
+  BlockType.COCOA_PICKAXE,
+  BlockType.COCOA_SPEAR,
+];
+
+export const grantCocoaStarterKit = (
+  player: Player,
+  discoveredItems?: Record<number, boolean>,
+): void => {
+  for (const tool of COCOA_TOOL_BLOCKS) {
+    if ((player.inventory[tool] ?? 0) < 1) {
+      player.inventory[tool] = 1;
+    }
+    if (MAX_DURABILITY[tool] !== undefined) {
+      player.durability[tool] = MAX_DURABILITY[tool];
+    }
+    if (discoveredItems) {
+      discoveredItems[tool] = true;
+    }
+  }
+};
+
+export const createInitialPlayer = (): Player => {
+  const player: Player = {
+    inventory: createEmptyInventory(),
+    x: SPAWN_X * TILE_SIZE,
+    y: (getSurfaceY(SPAWN_X) - 2) * TILE_SIZE,
+    vx: 0,
+    vy: 0,
+    width: 24,
+    height: 48,
+    grounded: false,
+    health: 10,
+    maxHealth: 10,
+    hunger: 10,
+    maxHunger: 10,
+    exhaustion: 0,
+    fallStartY: undefined,
+    hurtTime: 0,
+    poisonTimer: 0,
+    poisonTick: 0,
+    isFlying: false,
+    breath: 600,
+    maxBreath: 600,
+    attackTimer: 0,
+    durability: { ...MAX_DURABILITY },
+  };
+  grantCocoaStarterKit(player);
+  return player;
+};
 
 /** Returns true when the player has a full set of Cocoa Cat armour equipped. */
 export const hasFullCocoaArmor = (player: Player): boolean =>
@@ -157,6 +186,9 @@ export const clonePlayer = (player: Player): Player => ({
 
 export const createInitialGameState = (): GameState => {
   const world = generateWorld();
+  const discoveredItems: Record<number, boolean> = {};
+  const player = createInitialPlayer();
+  grantCocoaStarterKit(player, discoveredItems);
 
   return {
     tick: 0,
@@ -167,7 +199,7 @@ export const createInitialGameState = (): GameState => {
     timeOfDay: 3600,
     weather: Weather.CLEAR,
     weatherTimer: 3600,
-    invChanged: false,
+    invChanged: true,
     selectedBlock: BlockType.AIR,
     actionCooldown: 0,
     world,
@@ -175,10 +207,10 @@ export const createInitialGameState = (): GameState => {
     droppedItems: [],
     animals: spawnAnimals(world),
     furnaces: {},
-    discoveredItems: {},
+    discoveredItems,
     history: [],
     cocoaCatDefeated: false,
-    player: createInitialPlayer(),
+    player,
     camera: {
       x: 0,
       y: 0,

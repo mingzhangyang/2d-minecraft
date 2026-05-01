@@ -2,16 +2,17 @@ import { soundEngine } from '../../../utils/SoundEngine';
 import { nextId } from '../ids';
 import {
   GRAVITY,
+  getToolReach,
   JUMP_FORCE,
   MAX_DURABILITY,
   MOVE_SPEED,
-  REACH,
   SPAWN_X,
   TILE_SIZE,
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from '../constants';
 import { getRequiredProgress } from '../crafting';
+import { ANIMAL_DEFS } from '../animalDefinitions';
 import { AnimalType, BlockType } from '../types';
 import type { GameState } from '../runtime';
 import { hasFullCocoaArmor } from '../runtime';
@@ -76,7 +77,7 @@ if (state.mouse.leftDown) {
   const gridY = Math.floor(worldY / TILE_SIZE);
   const playerCenterX = player.x + player.width / 2;
   const playerCenterY = player.y + player.height / 2;
-  const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+  const currentReach = getToolReach(state.selectedBlock);
   const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
   if (!hoveringAnimal && distSq <= currentReach * currentReach && gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 && gridY < WORLD_HEIGHT) {
@@ -215,15 +216,16 @@ if (touchingPortal) {
       const throneCenterX = castleStartX + Math.floor(castleWidth / 2);
       const castleY = Math.floor(WORLD_HEIGHT / 2);
       const throneSeatY = castleY - 3;
+      const cocoaDef = ANIMAL_DEFS[AnimalType.COCOA_CAT];
 
-      const spawnX = throneCenterX * TILE_SIZE - 60; // Center the 120px wide cat
-      const spawnY = throneSeatY * TILE_SIZE - 120; // Place on top of the seat
+      const spawnX = throneCenterX * TILE_SIZE - cocoaDef.width / 2;
+      const spawnY = throneSeatY * TILE_SIZE - cocoaDef.height;
 
       state.animals.push({
         x: spawnX,
         y: spawnY,
-        width: 120,
-        height: 120,
+        width: cocoaDef.width,
+        height: cocoaDef.height,
         vx: 0,
         vy: 0,
         type: AnimalType.COCOA_CAT,
@@ -231,8 +233,8 @@ if (touchingPortal) {
         state: 'idle',
         stateTime: 100,
         facing: -1,
-        health: 500,
-        maxHealth: 500,
+        health: cocoaDef.health,
+        maxHealth: cocoaDef.health,
         hurtTime: 0,
         attackCooldown: 0,
         launchCooldown: 0,
@@ -242,7 +244,7 @@ if (touchingPortal) {
         regenTimer: 0,
         tamed: false,
         attackTimer: 0,
-        attackPattern: 'lunge',
+        attackPattern: cocoaDef.attackPattern,
         chargeTimer: 0,
       });
     }

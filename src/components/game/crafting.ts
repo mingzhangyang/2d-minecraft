@@ -1,5 +1,6 @@
 import { BlockType } from './types';
 import { MAX_DURABILITY } from './constants';
+import { isTreeBlock } from './constants';
 
 type CraftingSlot = { type: BlockType; count: number } | null;
 
@@ -79,6 +80,7 @@ export const checkCrafting = (
   const I  = BlockType.IRON_INGOT;
   const G  = BlockType.GOLD_INGOT;
   const Di = BlockType.DIAMOND;
+  const C  = BlockType.COCOA_FUR;
   const _  = null; // empty slot
 
   // Any log → 4 planks
@@ -96,6 +98,25 @@ export const checkCrafting = (
 
   // Fang Lance: fang above stick
   if (matchPattern(types, [[F], [S]])) return { type: BlockType.FANG_LANCE, count: 1 };
+
+  // Cocoa tools
+  if (matchPattern(types, [[C], [C], [S]])) return { type: BlockType.COCOA_SWORD, count: 1 };
+  if (matchPattern(types, [[C], [S], [S]])) return { type: BlockType.COCOA_SPEAR, count: 1 };
+  if (matchPattern(types, [
+    [C, C],
+    [C, S],
+    [ _, S],
+  ])) return { type: BlockType.COCOA_AXE, count: 1 };
+  if (matchPattern(types, [
+    [C, C, C],
+    [ _, S, _],
+    [S, S, S],
+  ])) return { type: BlockType.COCOA_HAMMER, count: 1 };
+  if (matchPattern(types, [
+    [C, C, C],
+    [ _, S, _],
+    [ _, S, _],
+  ])) return { type: BlockType.COCOA_PICKAXE, count: 1 };
 
   // 2×2 stone → 4 bricks
   if (matchPattern(types, [[St, St], [St, St]])) return { type: BlockType.BRICKS, count: 4 };
@@ -157,12 +178,21 @@ export const getRequiredProgress = (
     if (item === BlockType.IRON_PICKAXE) return 3;
     if (item === BlockType.GOLD_PICKAXE) return 4;
     if (item === BlockType.DIAMOND_PICKAXE) return 5;
+    if (item === BlockType.COCOA_PICKAXE) return 6;
     return 0;
   };
 
   const toolTier = getPickaxeTier(selectedBlock);
   let requiredProgress = 15;
   let canMine = true;
+
+  if (selectedBlock === BlockType.COCOA_PICKAXE && hasItem) {
+    return { requiredProgress: 0, canMine: true };
+  }
+
+  if (selectedBlock === BlockType.COCOA_AXE && hasItem && isTreeBlock(type)) {
+    return { requiredProgress: 0, canMine: true };
+  }
 
   if (
     type === BlockType.TALL_GRASS ||

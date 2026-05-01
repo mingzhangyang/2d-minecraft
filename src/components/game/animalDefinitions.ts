@@ -1,4 +1,5 @@
 import { AnimalType } from './types';
+import { COCOA_CAT_HEALTH } from './constants';
 
 export interface AnimalDef {
   width: number;
@@ -28,5 +29,5 @@ export const ANIMAL_DEFS: Record<AnimalType, AnimalDef> = {
   [AnimalType.LEOPARD]:      { width: 24,  height: 16,  health: 20,  attackDamage: 8,  attackPattern: 'lunge',   maxCount: 5,  spawnBiomes: [0,4,5,8] },
   [AnimalType.JAGUAR]:       { width: 24,  height: 16,  health: 20,  attackDamage: 8,  attackPattern: 'lunge',   maxCount: 5,  spawnBiomes: [0,6,8] },
   [AnimalType.BLACK_JAGUAR]: { width: 24,  height: 16,  health: 20,  attackDamage: 8,  attackPattern: 'lunge',   maxCount: 5,  spawnBiomes: [0,6,8] },
-  [AnimalType.COCOA_CAT]:    { width: 120, height: 120, health: 500, attackDamage: 0,  attackPattern: 'lunge',   maxCount: 1,  spawnBiomes: [] },
+  [AnimalType.COCOA_CAT]:    { width: 120, height: 120, health: COCOA_CAT_HEALTH, attackDamage: 0,  attackPattern: 'lunge',   maxCount: 1,  spawnBiomes: [] },
 };

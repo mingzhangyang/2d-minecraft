@@ -1,5 +1,5 @@
 import { soundEngine } from '../../../utils/SoundEngine';
-import { BASE_ATTACK_DAMAGE, MAX_DURABILITY, POISON_WEAPONS, REACH, SNAKE_ALERT_RADIUS, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { BASE_ATTACK_DAMAGE, COCOA_HAMMER_JUMP_BONUS_DAMAGE, getToolReach, MAX_DURABILITY, POISON_WEAPONS, SNAKE_ALERT_RADIUS, TILE_SIZE, WEAPON_DAMAGE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { AnimalType, BlockType } from '../types';
 import type { FurnaceData } from '../types';
 import type { GameState } from '../runtime';
@@ -44,7 +44,7 @@ export const handleInteract = (
 
   const playerCenterX = state.player.x + state.player.width / 2;
   const playerCenterY = state.player.y + state.player.height / 2;
-  const currentReach = state.selectedBlock === BlockType.FANG_LANCE ? REACH * 1.5 : REACH;
+  const currentReach = getToolReach(state.selectedBlock);
   const distSq = (worldX - playerCenterX) ** 2 + (worldY - playerCenterY) ** 2;
 
   if (distSq > currentReach * currentReach) return;
@@ -147,6 +147,14 @@ export const handleInteract = (
           if (POISON_WEAPONS.has(state.selectedBlock)) {
             animal.poisonTimer = 300;
             animal.poisonTick = 60;
+          }
+          if (state.selectedBlock === BlockType.COCOA_HAMMER) {
+            const jumpingOnTarget =
+              state.player.vy > 0 &&
+              state.player.y + state.player.height <= animal.y + animal.height * 0.6;
+            if (jumpingOnTarget) {
+              damage += COCOA_HAMMER_JUMP_BONUS_DAMAGE;
+            }
           }
         }
 

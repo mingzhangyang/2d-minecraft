@@ -56,6 +56,20 @@ export const GRAVITY = 0.4;
 export const JUMP_FORCE = -8;
 export const MOVE_SPEED = 4;
 export const REACH = TILE_SIZE * 5;
+const clampHugeNumber = (value: number): number =>
+  Number.isFinite(value) ? value : Number.MAX_VALUE;
+
+export const COCOA_CAT_HEALTH = clampHugeNumber(1e1000000);
+export const COCOA_SWORD_DAMAGE = clampHugeNumber(1e3424);
+export const COCOA_HAMMER_BASE_DAMAGE = clampHugeNumber(1e456);
+export const COCOA_HAMMER_JUMP_BONUS_DAMAGE = 1e32;
+export const COCOA_SPEAR_DAMAGE = clampHugeNumber(1e346);
+
+export const getToolReach = (selectedBlock: BlockType): number => {
+  if (selectedBlock === BlockType.COCOA_SPEAR) return Number.POSITIVE_INFINITY;
+  if (selectedBlock === BlockType.FANG_LANCE) return REACH * 1.5;
+  return REACH;
+};
 
 export const STARS = Array.from({ length: 150 }).map(() => ({
   x: Math.random(),
@@ -135,6 +149,11 @@ export const BLOCK_COLORS: Record<BlockType, string> = {
   [BlockType.IRON_SWORD]: 'transparent',
   [BlockType.GOLD_SWORD]: 'transparent',
   [BlockType.DIAMOND_SWORD]: 'transparent',
+  [BlockType.COCOA_SWORD]: 'transparent',
+  [BlockType.COCOA_AXE]: 'transparent',
+  [BlockType.COCOA_HAMMER]: 'transparent',
+  [BlockType.COCOA_PICKAXE]: 'transparent',
+  [BlockType.COCOA_SPEAR]: 'transparent',
 };
 
 export const INVENTORY_BLOCKS = [
@@ -169,6 +188,12 @@ export const INVENTORY_BLOCKS = [
   BlockType.COCOA_LEGGINGS,
   BlockType.COCOA_BOOTS,
   BlockType.COCOA_FUR,
+  // Keep Cocoa tools near the center of the inventory grid.
+  BlockType.COCOA_SWORD,
+  BlockType.COCOA_AXE,
+  BlockType.COCOA_HAMMER,
+  BlockType.COCOA_PICKAXE,
+  BlockType.COCOA_SPEAR,
   BlockType.TALL_GRASS,
   BlockType.STICK,
   BlockType.FANG,
@@ -213,6 +238,11 @@ export const MAX_DURABILITY: Record<number, number> = {
   [BlockType.GOLD_SWORD]: 33,
   [BlockType.DIAMOND_SWORD]: 1562,
   [BlockType.FANG_LANCE]: 132,
+  [BlockType.COCOA_SWORD]: 1000000000,
+  [BlockType.COCOA_AXE]: 1000000000,
+  [BlockType.COCOA_HAMMER]: 1000000000,
+  [BlockType.COCOA_PICKAXE]: 1000000000,
+  [BlockType.COCOA_SPEAR]: 1000000000,
 };
 
 export const SPAWN_X = 50;
@@ -232,6 +262,11 @@ export const WEAPON_DAMAGE: Partial<Record<BlockType, number>> = {
   [BlockType.IRON_PICKAXE]: 5,
   [BlockType.GOLD_PICKAXE]: 3,
   [BlockType.DIAMOND_PICKAXE]: 6,
+  [BlockType.COCOA_SWORD]: COCOA_SWORD_DAMAGE,
+  [BlockType.COCOA_AXE]: 40,
+  [BlockType.COCOA_HAMMER]: COCOA_HAMMER_BASE_DAMAGE,
+  [BlockType.COCOA_PICKAXE]: 50,
+  [BlockType.COCOA_SPEAR]: COCOA_SPEAR_DAMAGE,
 };
 
 export const POISON_WEAPONS = new Set<BlockType>([BlockType.FANG, BlockType.FANG_LANCE]);
