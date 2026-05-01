@@ -69,7 +69,7 @@ localStorage.setItem('blockbuilder_debug_controls', '1')
 When enabled:
 
 - `` ` ``: toggle debug overlay
-- `Alt+Shift+D`: force death
+- `Alt+Shift+K`: force death
 - `Alt+Shift+R`: toggle auto-respawn
 - `Alt+Shift+F`: toggle flying
 - Hold `Alt+Shift+V`: slow motion

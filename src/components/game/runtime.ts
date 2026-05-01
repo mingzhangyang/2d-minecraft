@@ -1,4 +1,4 @@
-import { MAX_DURABILITY, SPAWN_X, TILE_SIZE } from './constants';
+import { COCOA_TOOL_BLOCKS, MAX_DURABILITY, SPAWN_X, TILE_SIZE } from './constants';
 import { createEmptyInventory } from './state';
 import {
   Animal,
@@ -117,14 +117,6 @@ export const getFuelTicks = (fuelType: BlockType) => {
 export const isValidFurnaceInput = (block: BlockType) => getSmeltResult(block) !== null;
 export const isValidFurnaceFuel = (block: BlockType) => getFuelTicks(block) > 0;
 
-export const COCOA_TOOL_BLOCKS: BlockType[] = [
-  BlockType.COCOA_SWORD,
-  BlockType.COCOA_AXE,
-  BlockType.COCOA_HAMMER,
-  BlockType.COCOA_PICKAXE,
-  BlockType.COCOA_SPEAR,
-];
-
 export const grantCocoaStarterKit = (
   player: Player,
   discoveredItems?: Record<number, boolean>,
@@ -132,9 +124,6 @@ export const grantCocoaStarterKit = (
   for (const tool of COCOA_TOOL_BLOCKS) {
     if ((player.inventory[tool] ?? 0) < 1) {
       player.inventory[tool] = 1;
-    }
-    if (MAX_DURABILITY[tool] !== undefined) {
-      player.durability[tool] = MAX_DURABILITY[tool];
     }
     if (discoveredItems) {
       discoveredItems[tool] = true;

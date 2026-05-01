@@ -1,11 +1,11 @@
 import { BlockType } from './types';
-import { MAX_DURABILITY } from './constants';
-import { isTreeBlock } from './constants';
+import { COCOA_TOOL_BLOCKS, isTreeBlock, MAX_DURABILITY } from './constants';
 
 type CraftingSlot = { type: BlockType; count: number } | null;
 
 export const getMaxStack = (type: BlockType): number => {
   if (MAX_DURABILITY[type] !== undefined) return 1;
+  if (COCOA_TOOL_BLOCKS.includes(type)) return 1;
   if (
     [
       BlockType.COCOA_HELMET,

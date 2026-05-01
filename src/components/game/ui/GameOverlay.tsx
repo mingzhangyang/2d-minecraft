@@ -326,9 +326,9 @@ export function GameOverlay({
           <p>Right/Shift+Click : Place Block / Eat Food</p>
           <p>I / E / Esc : Open/Close Inventory</p>
           <p>S : Split Item (Hover in Inv/Crafting)</p>
-          <p>D : Kill Player (Dev)</p>
-          <p>R : Toggle Auto-Respawn</p>
-          <p>F : Toggle Flight</p>
+          <p>Alt+Shift+K : Kill Player (Dev)</p>
+          <p>Alt+Shift+R : Toggle Auto-Respawn</p>
+          <p>Alt+Shift+F : Toggle Flight</p>
           <p>C : Toggle Controls</p>
           <p>H : Toggle Hotbar</p>
           <p className="mt-2 font-bold text-yellow-300">Days Played: {stats.daysPlayed}</p>

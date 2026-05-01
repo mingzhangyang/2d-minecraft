@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   areDebugControlsEnabled,
   DEBUG_CONTROLS_STORAGE_KEY,
+  DEBUG_FORCE_DEATH_KEY,
   isDebugShortcutModifier,
 } from './debugShortcuts';
 
@@ -40,5 +41,9 @@ describe('debug shortcut gating', () => {
 
   it('exports the documented storage key', () => {
     expect(DEBUG_CONTROLS_STORAGE_KEY).toBe('blockbuilder_debug_controls');
+  });
+
+  it('exports K as the force-death debug key', () => {
+    expect(DEBUG_FORCE_DEATH_KEY).toBe('k');
   });
 });

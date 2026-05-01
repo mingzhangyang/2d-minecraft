@@ -65,6 +65,14 @@ export const COCOA_HAMMER_BASE_DAMAGE = clampHugeNumber(1e456);
 export const COCOA_HAMMER_JUMP_BONUS_DAMAGE = 1e32;
 export const COCOA_SPEAR_DAMAGE = clampHugeNumber(1e346);
 
+export const COCOA_TOOL_BLOCKS: BlockType[] = [
+  BlockType.COCOA_SWORD,
+  BlockType.COCOA_AXE,
+  BlockType.COCOA_HAMMER,
+  BlockType.COCOA_PICKAXE,
+  BlockType.COCOA_SPEAR,
+];
+
 export const getToolReach = (selectedBlock: BlockType): number => {
   if (selectedBlock === BlockType.COCOA_SPEAR) return Number.POSITIVE_INFINITY;
   if (selectedBlock === BlockType.FANG_LANCE) return REACH * 1.5;
@@ -238,11 +246,6 @@ export const MAX_DURABILITY: Record<number, number> = {
   [BlockType.GOLD_SWORD]: 33,
   [BlockType.DIAMOND_SWORD]: 1562,
   [BlockType.FANG_LANCE]: 132,
-  [BlockType.COCOA_SWORD]: 1000000000,
-  [BlockType.COCOA_AXE]: 1000000000,
-  [BlockType.COCOA_HAMMER]: 1000000000,
-  [BlockType.COCOA_PICKAXE]: 1000000000,
-  [BlockType.COCOA_SPEAR]: 1000000000,
 };
 
 export const SPAWN_X = 50;

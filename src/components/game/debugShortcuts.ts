@@ -1,4 +1,5 @@
 export const DEBUG_CONTROLS_STORAGE_KEY = 'blockbuilder_debug_controls';
+export const DEBUG_FORCE_DEATH_KEY = 'k';
 
 type KeyboardShortcutEvent = {
   altKey: boolean;

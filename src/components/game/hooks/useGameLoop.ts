@@ -13,7 +13,7 @@ import { updateGame } from '../update/updateGame';
 import { handleInteract as _handleInteract } from '../update/playerInteractions';
 import { saveGame, loadGame } from '../persistence';
 import { disposeWorldStreaming } from '../world';
-import { areDebugControlsEnabled, isDebugShortcutModifier } from '../debugShortcuts';
+import { areDebugControlsEnabled, DEBUG_FORCE_DEATH_KEY, isDebugShortcutModifier } from '../debugShortcuts';
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 type GameStats = { health: number; hunger: number; daysPlayed: number };
@@ -97,7 +97,7 @@ export const useGameLoop = ({
 
       if (debugControlsEnabled && isDebugShortcutModifier(e)) {
         const key = e.key.toLowerCase();
-        if (key === 'd') {
+        if (key === DEBUG_FORCE_DEATH_KEY) {
           state.isDead = true;
         }
         if (key === 'r') {

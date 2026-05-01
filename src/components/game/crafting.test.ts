@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BlockType } from './types';
-import { checkCrafting, getRequiredProgress } from './crafting';
+import { checkCrafting, getMaxStack, getRequiredProgress } from './crafting';
+import { COCOA_TOOL_BLOCKS } from './constants';
 
 // Helpers to build the 9-slot crafting grid
 type Slot = { type: BlockType; count: number } | null;
@@ -32,6 +33,14 @@ const place = (
 describe('checkCrafting – empty grid', () => {
   it('returns null for an empty grid', () => {
     expect(checkCrafting(empty())).toBeNull();
+  });
+});
+
+describe('getMaxStack', () => {
+  it('keeps Cocoa tools unstackable without durability', () => {
+    for (const tool of COCOA_TOOL_BLOCKS) {
+      expect(getMaxStack(tool)).toBe(1);
+    }
   });
 });
 
