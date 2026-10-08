@@ -8,6 +8,7 @@ import { createInitialGameState, respawnPlayer } from './game/runtime';
 import { useGameLoop } from './game/hooks/useGameLoop';
 import { useInventoryInteractions } from './game/hooks/useInventoryInteractions';
 import { deleteSave } from './game/persistence';
+import { track } from '../utils/analytics';
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,6 +51,19 @@ export default function Game() {
     setIsDead,
     setAutoRespawn,
   });
+
+  // Play stats. A sandbox has no natural "run", so a life is the unit: the
+  // session start, every respawn and every new world count as 'play', and
+  // each death counts as 'finish'.
+  const wasDeadRef = useRef(false);
+  useEffect(() => {
+    track('play');
+  }, []);
+  useEffect(() => {
+    if (isDead) track('finish');
+    else if (wasDeadRef.current) track('play');
+    wasDeadRef.current = isDead;
+  }, [isDead]);
 
   // Sync selected block to game state ref
   useEffect(() => {
@@ -175,6 +189,8 @@ export default function Game() {
   };
 
   const handleNewGame = () => {
+    // From the death screen the isDead -> false transition already counts it.
+    if (!isDead) track('play');
     deleteSave();
     // Reinitialize game state in place
     const state = gameState.current;
