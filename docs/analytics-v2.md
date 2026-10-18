@@ -21,7 +21,9 @@ The site and `games-analytics` Worker deploy separately. Confirm that the Worker
 has the allowlisted game ID and origin from the merged games registry and its
 existing D1 schema. No new D1 migration is needed for this client upgrade.
 
-Local check: `npm run lint && npm run test:analytics && npm run build`.
+Local check: `npm run lint && npm run test:analytics && npm test && npm run build`.
+Vitest is scoped to `src/` game tests; the standalone `node:test` suite in
+`tests/` runs only through `test:analytics` so the test runners do not collide.
 The unit test uses a local fake browser and sends **no production requests**.
 Manual production acceptance: reload once, play one real game, pause/finish
 and confirm the game's V2 `opens`, `activeSeconds`, `playingSeconds`,
