@@ -8,7 +8,7 @@ import { createInitialGameState, respawnPlayer } from './game/runtime';
 import { useGameLoop } from './game/hooks/useGameLoop';
 import { useInventoryInteractions } from './game/hooks/useInventoryInteractions';
 import { deleteSave } from './game/persistence';
-import { track } from '../utils/analytics';
+import { initAnalytics, track } from '../utils/analytics';
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,6 +51,12 @@ export default function Game() {
     setIsDead,
     setAutoRespawn,
   });
+
+  // The shared client reads the latest React state; open/active sampling belongs
+  // solely to the shared client. Crafting and inventory are still sandbox play.
+  const playingRef = useRef(!isDead);
+  playingRef.current = !isDead;
+  useEffect(() => { initAnalytics(() => playingRef.current); }, []);
 
   // Play stats. A sandbox has no natural "run", so a life is the unit: the
   // session start, every respawn and every new world count as 'play', and

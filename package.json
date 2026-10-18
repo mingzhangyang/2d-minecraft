@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run src/",
     "worker:preview": "npm run build && wrangler dev",
-    "worker:deploy": "npm run build && wrangler deploy"
+    "worker:deploy": "npm run build && wrangler deploy",
+    "test:analytics": "node --test tests/analytics.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
