@@ -7,6 +7,12 @@ type OrientationControl = { lock?: (orientation: 'landscape') => Promise<void> }
 
 export type LandscapeLockResult = 'locked' | 'unavailable' | 'rejected';
 
+/** The project's DOM types omit this optional browser API. */
+function getOrientationControl(): OrientationControl | undefined {
+  if (typeof screen === 'undefined') return undefined;
+  return screen.orientation as (ScreenOrientation & OrientationControl) | undefined;
+}
+
 /**
  * Browsers generally require fullscreen before locking orientation, and
  * fullscreen itself requires a user gesture. Keep the sequence in one place
@@ -47,8 +53,7 @@ export function useLandscapeMode(rootRef: RefObject<HTMLDivElement | null>) {
   const [isRequesting, setIsRequesting] = useState(false);
   const pendingRef = useRef(false);
 
-  const canRequestLandscape =
-    typeof screen !== 'undefined' && typeof screen.orientation?.lock === 'function';
+  const canRequestLandscape = typeof getOrientationControl()?.lock === 'function';
 
   useEffect(() => {
     const touchQuery = window.matchMedia('(pointer: coarse)');
@@ -66,9 +71,10 @@ export function useLandscapeMode(rootRef: RefObject<HTMLDivElement | null>) {
 
     // Installed/standalone web apps may allow this without an extra gesture.
     // Ordinary mobile tabs reject it; the button below retries in fullscreen.
-    if (touchQuery.matches && typeof screen.orientation?.lock === 'function') {
+    const orientation = getOrientationControl();
+    if (touchQuery.matches && typeof orientation?.lock === 'function') {
       try {
-        void screen.orientation.lock('landscape').catch(() => {});
+        void orientation.lock('landscape').catch(() => {});
       } catch {
         // A browser may throw synchronously rather than return a promise.
       }
@@ -86,7 +92,7 @@ export function useLandscapeMode(rootRef: RefObject<HTMLDivElement | null>) {
     pendingRef.current = true;
     setIsRequesting(true);
     try {
-      const result = await lockLandscapeInFullscreen(rootRef.current, document, screen.orientation);
+      const result = await lockLandscapeInFullscreen(rootRef.current, document, getOrientationControl());
       setRequestFailed(result !== 'locked');
     } finally {
       pendingRef.current = false;
