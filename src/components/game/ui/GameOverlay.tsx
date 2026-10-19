@@ -154,7 +154,7 @@ export function GameOverlay({
           onContextMenu={event => event.preventDefault()}
           onMouseMove={onInventoryMouseMove}
         >
-          <div className="flex gap-12 rounded-lg border-4 border-[#555] bg-[#C6C6C6] p-6 shadow-2xl">
+          <div className="game-inventory-panel flex gap-12 rounded-lg border-4 border-[#555] bg-[#C6C6C6] p-6 shadow-2xl">
             <div>
               <h2 className="mb-2 text-xl font-bold text-[#373737]">Inventory</h2>
               <div className="max-h-[70vh] overflow-y-auto pr-1 overscroll-contain">
@@ -281,7 +281,7 @@ export function GameOverlay({
       )}
 
       {showHotbar && (
-        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl bg-black/50 p-1.5 backdrop-blur-sm">
+        <div className="game-hotbar absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl bg-black/50 p-1.5 backdrop-blur-sm">
           {INVENTORY_BLOCKS.map(block =>
             discoveredItems[block] ? (
               <button
@@ -318,7 +318,7 @@ export function GameOverlay({
       )}
 
       {showControls && (
-        <div className="pointer-events-none absolute left-4 top-4 rounded-lg bg-black/50 p-3 font-mono text-sm text-white/80 backdrop-blur-sm">
+        <div className="game-desktop-controls pointer-events-none absolute left-4 top-4 rounded-lg bg-black/50 p-3 font-mono text-sm text-white/80 backdrop-blur-sm">
           <p className="mb-1 font-bold text-white">Controls</p>
           <p>WASD / Arrows : Move</p>
           <p>Space / Up : Jump</p>
@@ -336,7 +336,7 @@ export function GameOverlay({
         </div>
       )}
 
-      <div className="pointer-events-none absolute right-4 top-4 flex flex-col gap-2">
+      <div className="game-status pointer-events-none absolute right-4 top-4 flex flex-col gap-2">
         <div className="flex justify-end gap-1">
           {Array.from({ length: 10 }).map((_, index) => (
             <Heart

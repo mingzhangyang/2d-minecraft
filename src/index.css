@@ -18,3 +18,71 @@
     50% { transform: scaleX(0.7) translateY(-4px); }
   }
 }
+
+/* Keep the canvas aligned with the visual viewport as mobile browser UI
+   expands/collapses, including landscape fullscreen. */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.game-screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.game-screen:fullscreen {
+  width: 100%;
+  height: 100%;
+}
+
+.game-canvas {
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  /* The keyboard-only help panel otherwise covers most of a phone screen. */
+  .game-desktop-controls {
+    display: none;
+  }
+
+  .game-hotbar {
+    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .game-hotbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .game-hotbar > * {
+    flex-shrink: 0;
+  }
+
+  .game-inventory-panel {
+    max-width: calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-height: calc(100dvh - 1rem);
+    gap: 1rem;
+    padding: 0.75rem;
+    overflow: auto;
+  }
+
+  .game-inventory-panel > * {
+    flex-shrink: 0;
+  }
+
+  .game-status {
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    top: max(1rem, env(safe-area-inset-top, 0px));
+  }
+}

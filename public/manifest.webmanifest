@@ -1,0 +1,19 @@
+{
+  "name": "2D Block Builder",
+  "short_name": "Block Builder",
+  "description": "Explore, mine and build in a 2D sandbox world.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#3E6E15",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
