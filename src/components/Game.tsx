@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Smartphone } from 'lucide-react';
 import { MAX_DURABILITY } from './game/constants';
 import { BlockType, FurnaceData } from './game/types';
 import { createEmptyInventory } from './game/state';
@@ -6,12 +7,19 @@ import { GameOverlay } from './game/ui/GameOverlay';
 import type { GameState, HoveredSlot, InventoryStack } from './game/runtime';
 import { createInitialGameState, respawnPlayer } from './game/runtime';
 import { useGameLoop } from './game/hooks/useGameLoop';
+import { useLandscapeMode } from './game/hooks/useLandscapeMode';
+import { usePortraitDialogFocus } from './game/hooks/usePortraitDialogFocus';
 import { useInventoryInteractions } from './game/hooks/useInventoryInteractions';
 import { deleteSave } from './game/persistence';
 import { initAnalytics, track } from '../utils/analytics';
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const { needsLandscape, canRequestLandscape, requestLandscape, isRequesting, requestFailed } =
+    useLandscapeMode(containerRef);
+  const { onDialogKeyDown } = usePortraitDialogFocus(needsLandscape, dialogRef, canvasRef);
   const [selectedBlock, setSelectedBlock] = useState<BlockType>(BlockType.DIRT);
   const [stats, setStats] = useState({ health: 10, hunger: 10, daysPlayed: 0 });
   const [inventory, setInventory] = useState<Record<number, number>>(createEmptyInventory());
@@ -39,6 +47,7 @@ export default function Game() {
   useGameLoop({
     canvasRef,
     gameState,
+    isPaused: needsLandscape,
     setShowControls,
     setShowHotbar,
     setIsInventoryOpen,
@@ -55,7 +64,7 @@ export default function Game() {
   // The shared client reads the latest React state; open/active sampling belongs
   // solely to the shared client. Crafting and inventory are still sandbox play.
   const playingRef = useRef(!isDead);
-  playingRef.current = !isDead;
+  playingRef.current = !isDead && !needsLandscape;
   useEffect(() => { initAnalytics(() => playingRef.current); }, []);
 
   // Play stats. A sandbox has no natural "run", so a life is the unit: the
@@ -135,23 +144,36 @@ export default function Game() {
     gameState.current.openFurnaceId = openFurnaceId;
   }, [openFurnaceId]);
 
-  // Handle window resize
+  // Size the drawing buffer to the canvas's actual layout box, including
+  // full-screen transitions, browser chrome changes, and device rotation.
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const handleResize = () => {
-      if (canvasRef.current) {
-        canvasRef.current.width = window.innerWidth;
-        canvasRef.current.height = window.innerHeight;
-      }
+      const bounds = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(bounds.width));
+      const height = Math.max(1, Math.round(bounds.height));
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
     };
-    handleResize();
+
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(handleResize);
+    observer?.observe(canvas);
     window.addEventListener('resize', handleResize);
-    
-    // Focus the canvas so keyboard events work immediately
-    if (canvasRef.current) {
-      canvasRef.current.focus();
-    }
-    
-    return () => window.removeEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleResize);
+    handleResize();
+
+    // Focus the canvas so keyboard events work immediately.
+    if (!needsLandscape) canvas.focus();
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
+    };
   }, []);
 
   const {
@@ -219,10 +241,11 @@ export default function Game() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black">
-      <canvas
+    <div ref={containerRef} className="game-screen relative w-full overflow-hidden bg-black">
+      <div className="absolute inset-0" inert={needsLandscape} aria-hidden={needsLandscape}>
+        <canvas
         ref={canvasRef}
-        className="block w-full h-full cursor-crosshair focus:outline-none"
+        className="game-canvas block w-full h-full cursor-crosshair focus:outline-none"
         style={{ imageRendering: 'pixelated' }}
         tabIndex={0}
       />
@@ -254,6 +277,43 @@ export default function Game() {
         onSelectBlock={setSelectedBlock}
         onHoveredSlotChange={handleHoveredSlotChange}
       />
+      </div>
+
+      {needsLandscape && (
+        <div
+          ref={dialogRef}
+          role="dialog"
+          tabIndex={-1}
+          onKeyDown={onDialogKeyDown}
+          aria-modal="true"
+          aria-labelledby="landscape-title"
+          className="absolute inset-0 z-[70] flex items-center justify-center bg-[#0b1714]/95 px-6 text-white"
+        >
+          <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+            <Smartphone aria-hidden="true" className="h-14 w-14 rotate-90 text-emerald-300" strokeWidth={1.5} />
+            <h1 id="landscape-title" className="text-2xl font-bold">Play in landscape</h1>
+            <p className="text-sm leading-relaxed text-white/80">
+              This game needs a wider screen. Turn your device sideways to continue.
+            </p>
+            {canRequestLandscape && (
+              <button
+                type="button"
+                onClick={requestLandscape}
+                disabled={isRequesting}
+                className="rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-black transition-colors hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {isRequesting ? 'Switching…' : 'Try landscape fullscreen'}
+              </button>
+            )}
+            {(requestFailed || !canRequestLandscape) && (
+              <p role="status" className="text-xs leading-relaxed text-white/60">
+                Your browser cannot rotate the screen automatically. Rotate your device manually
+                and check that orientation lock is turned off.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

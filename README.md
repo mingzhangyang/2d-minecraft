@@ -87,3 +87,16 @@ The game auto-saves to `localStorage` every 30 seconds and before page unload. A
 - `src/components/game/world/`: deterministic terrain generation, streamed world store, and spawning
 - `src/components/game/persistence.ts`: save/load logic
 - `src/components/game/crafting.ts`: crafting and mining rules
+
+## Mobile Orientation
+
+The game prefers landscape on phones and tablets. Installed web apps request
+landscape through the web app manifest. On supported mobile browsers, **Try
+landscape fullscreen** requests fullscreen and then locks orientation when the
+user taps it. Browsers that block orientation locking (including iOS Safari)
+instead show a prompt to turn the device sideways. The game adjusts its canvas
+to the actual viewport when the screen rotates or fullscreen changes.
+
+Orientation support is separate from input support: gameplay still uses the
+keyboard and mouse controls listed above; this update does not introduce
+on-screen movement, mining, or building controls.
