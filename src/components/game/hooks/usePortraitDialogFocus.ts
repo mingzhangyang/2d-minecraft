@@ -77,11 +77,15 @@ export function usePortraitDialogFocus(
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    const candidates = Array.from(
-      dialog.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ),
-    ).filter(element => element.getClientRects().length > 0 && !element.hasAttribute('inert'));
+    const candidates: HTMLElement[] = [];
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    focusable.forEach(element => {
+      if (element.getClientRects().length > 0 && !element.hasAttribute('inert')) {
+        candidates.push(element);
+      }
+    });
     const wrappedTarget = getWrappedTabTarget(candidates, document.activeElement as HTMLElement | null, event.shiftKey);
 
     if (candidates.length === 0 || wrappedTarget) {
