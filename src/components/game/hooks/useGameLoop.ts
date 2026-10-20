@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { soundEngine } from '../../../utils/SoundEngine';
 import { MAX_DURABILITY, TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
@@ -14,6 +14,7 @@ import { handleInteract as _handleInteract } from '../update/playerInteractions'
 import { saveGame, loadGame } from '../persistence';
 import { disposeWorldStreaming } from '../world';
 import { areDebugControlsEnabled, DEBUG_FORCE_DEATH_KEY, isDebugShortcutModifier } from '../debugShortcuts';
+import { releaseHeldGameInput, shouldAdvanceGame } from './gameLoopPause';
 
 type SetState<T> = Dispatch<SetStateAction<T>>;
 type GameStats = { health: number; hunger: number; daysPlayed: number };
@@ -21,6 +22,7 @@ type GameStats = { health: number; hunger: number; daysPlayed: number };
 type UseGameLoopParams = {
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
   gameState: MutableRefObject<GameState>;
+  isPaused: boolean;
   setShowControls: SetState<boolean>;
   setShowHotbar: SetState<boolean>;
   setIsInventoryOpen: SetState<boolean>;
@@ -37,6 +39,7 @@ type UseGameLoopParams = {
 export const useGameLoop = ({
   canvasRef,
   gameState,
+  isPaused,
   setShowControls,
   setShowHotbar,
   setIsInventoryOpen,
@@ -49,6 +52,15 @@ export const useGameLoop = ({
   setIsDead,
   setAutoRespawn,
 }: UseGameLoopParams) => {
+  // The animation loop is mounted once; read the current orientation gate
+  // without tearing down the simulation or reloading the save on rotation.
+  const pausedRef = useRef(isPaused);
+  pausedRef.current = isPaused;
+
+  useEffect(() => {
+    if (isPaused) releaseHeldGameInput(gameState.current);
+  }, [isPaused, gameState]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -57,6 +69,7 @@ export const useGameLoop = ({
 
     let animationFrameId: number;
     let frameCount = 0;
+    let wasPaused = false;
     let showDebug = false;
     let fpsFrameCount = 0;
     let lastFpsTime = performance.now();
@@ -91,6 +104,7 @@ export const useGameLoop = ({
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (pausedRef.current) return;
       soundEngine.init();
       if (e.repeat) return;
       state.keys[e.code] = true;
@@ -148,12 +162,14 @@ export const useGameLoop = ({
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (pausedRef.current) return;
       const rect = canvas.getBoundingClientRect();
       state.mouse.x = e.clientX - rect.left;
       state.mouse.y = e.clientY - rect.top;
     };
 
     const handleMouseDown = (e: MouseEvent) => {
+      if (pausedRef.current) return;
       soundEngine.init();
       const rect = canvas.getBoundingClientRect();
       state.mouse.x = e.clientX - rect.left;
@@ -229,6 +245,9 @@ export const useGameLoop = ({
       drawGame({ canvas, ctx, state });
     };
     const loop = () => {
+      const paused = pausedRef.current;
+      if (paused && !wasPaused) releaseHeldGameInput(state);
+      wasPaused = paused;
       frameCount++;
       const isSlowMo =
         debugControlsEnabled &&
@@ -237,7 +256,7 @@ export const useGameLoop = ({
         (state.keys['ShiftLeft'] || state.keys['ShiftRight']);
       
       // Update at full speed normally, or 1/4 speed if holding V
-      if (!isSlowMo || frameCount % 4 === 0) {
+      if (shouldAdvanceGame(paused, isSlowMo, frameCount)) {
         update();
       }
       

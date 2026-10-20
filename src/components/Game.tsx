@@ -8,6 +8,7 @@ import type { GameState, HoveredSlot, InventoryStack } from './game/runtime';
 import { createInitialGameState, respawnPlayer } from './game/runtime';
 import { useGameLoop } from './game/hooks/useGameLoop';
 import { useLandscapeMode } from './game/hooks/useLandscapeMode';
+import { usePortraitDialogFocus } from './game/hooks/usePortraitDialogFocus';
 import { useInventoryInteractions } from './game/hooks/useInventoryInteractions';
 import { deleteSave } from './game/persistence';
 import { initAnalytics, track } from '../utils/analytics';
@@ -15,8 +16,10 @@ import { initAnalytics, track } from '../utils/analytics';
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const { needsLandscape, canRequestLandscape, requestLandscape, isRequesting, requestFailed } =
     useLandscapeMode(containerRef);
+  const { onDialogKeyDown } = usePortraitDialogFocus(needsLandscape, dialogRef, canvasRef);
   const [selectedBlock, setSelectedBlock] = useState<BlockType>(BlockType.DIRT);
   const [stats, setStats] = useState({ health: 10, hunger: 10, daysPlayed: 0 });
   const [inventory, setInventory] = useState<Record<number, number>>(createEmptyInventory());
@@ -44,6 +47,7 @@ export default function Game() {
   useGameLoop({
     canvasRef,
     gameState,
+    isPaused: needsLandscape,
     setShowControls,
     setShowHotbar,
     setIsInventoryOpen,
@@ -60,7 +64,7 @@ export default function Game() {
   // The shared client reads the latest React state; open/active sampling belongs
   // solely to the shared client. Crafting and inventory are still sandbox play.
   const playingRef = useRef(!isDead);
-  playingRef.current = !isDead;
+  playingRef.current = !isDead && !needsLandscape;
   useEffect(() => { initAnalytics(() => playingRef.current); }, []);
 
   // Play stats. A sandbox has no natural "run", so a life is the unit: the
@@ -162,7 +166,7 @@ export default function Game() {
     handleResize();
 
     // Focus the canvas so keyboard events work immediately.
-    canvas.focus();
+    if (!needsLandscape) canvas.focus();
 
     return () => {
       observer?.disconnect();
@@ -238,7 +242,8 @@ export default function Game() {
 
   return (
     <div ref={containerRef} className="game-screen relative w-full overflow-hidden bg-black">
-      <canvas
+      <div className="absolute inset-0" inert={needsLandscape} aria-hidden={needsLandscape}>
+        <canvas
         ref={canvasRef}
         className="game-canvas block w-full h-full cursor-crosshair focus:outline-none"
         style={{ imageRendering: 'pixelated' }}
@@ -272,10 +277,14 @@ export default function Game() {
         onSelectBlock={setSelectedBlock}
         onHoveredSlotChange={handleHoveredSlotChange}
       />
+      </div>
 
       {needsLandscape && (
         <div
+          ref={dialogRef}
           role="dialog"
+          tabIndex={-1}
+          onKeyDown={onDialogKeyDown}
           aria-modal="true"
           aria-labelledby="landscape-title"
           className="absolute inset-0 z-[70] flex items-center justify-center bg-[#0b1714]/95 px-6 text-white"
